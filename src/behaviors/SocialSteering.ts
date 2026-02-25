@@ -28,6 +28,7 @@ export function separation(fish: Fish, neighbors: Fish[], radius: number, weight
 
 /**
  * Alignment: steer toward the average heading of nearby same-species fish.
+ * Attenuated by neighbor count — pairs barely align, larger groups align strongly.
  */
 export function alignment(fish: Fish, neighbors: Fish[], weight: number): Vector {
   if (neighbors.length === 0) return Vector.zero();
@@ -38,15 +39,20 @@ export function alignment(fish: Fish, neighbors: Fish[], weight: number): Vector
   }
   avgVel = avgVel.scale(1 / neighbors.length);
 
+  // Ramp up with group size: 1 neighbor → 0.25, 2 → 0.5, 4+ → full
+  const groupFactor = Math.min(neighbors.length / 4, 1);
+
   // Steer toward average velocity
   const desired = avgVel.normalize().scale(fish.species.maxSpeed);
-  return desired.sub(fish.velocity).limit(fish.species.maxForce * weight);
+  return desired.sub(fish.velocity).limit(fish.species.maxForce * weight * groupFactor);
 }
 
 /**
  * Cohesion: steer toward the centroid of nearby same-species fish.
+ * Attenuated by distance — fish already near the centroid feel almost no pull,
+ * so the school holds loosely rather than collapsing to a point.
  */
-export function cohesion(fish: Fish, neighbors: Fish[], weight: number): Vector {
+export function cohesion(fish: Fish, neighbors: Fish[], weight: number, perceptionRadius: number): Vector {
   if (neighbors.length === 0) return Vector.zero();
 
   let centroid = Vector.zero();
@@ -55,9 +61,16 @@ export function cohesion(fish: Fish, neighbors: Fish[], weight: number): Vector 
   }
   centroid = centroid.scale(1 / neighbors.length);
 
-  // Steer toward centroid
-  const desired = centroid.sub(fish.position).normalize().scale(fish.species.maxSpeed);
-  return desired.sub(fish.velocity).limit(fish.species.maxForce * weight);
+  const toCentroid = centroid.sub(fish.position);
+  const dist = toCentroid.mag();
+  if (dist < 0.001) return Vector.zero();
+
+  // Scale by how far we are from centroid relative to perception radius.
+  // Near centroid → ~0, at edge of perception → full strength.
+  const distFactor = Math.min(dist / perceptionRadius, 1);
+
+  const desired = toCentroid.normalize().scale(fish.species.maxSpeed * distFactor);
+  return desired.sub(fish.velocity).limit(fish.species.maxForce * weight * distFactor);
 }
 
 /**

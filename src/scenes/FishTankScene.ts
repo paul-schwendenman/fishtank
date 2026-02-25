@@ -9,7 +9,7 @@ import { wander, avoidBoundaries, wanderZ, avoidZBoundaries } from '../behaviors
 import { getPerceivedNeighbors } from '../behaviors/Perception';
 import { separation, alignment, cohesion, solitarySpacing, passiveAvoidance } from '../behaviors/SocialSteering';
 import { avoidObstacles, seekSurface, substrateBehavior } from '../behaviors/EnvironmentSteering';
-import { composeForceBudget, type PrioritizedForce, PRIORITY_BOUNDARY, PRIORITY_OBSTACLE, PRIORITY_SEPARATION, PRIORITY_ALIGNMENT, PRIORITY_COHESION, PRIORITY_SOLITARY, PRIORITY_PASSIVE_AVOID, PRIORITY_WANDER, PRIORITY_SURFACE, PRIORITY_SUBSTRATE } from '../behaviors/ForceBudget';
+import { composeForceBudget, type PrioritizedForce, PRIORITY_BOUNDARY, PRIORITY_OBSTACLE, PRIORITY_SEPARATION, PRIORITY_ALIGNMENT, PRIORITY_COHESION, PRIORITY_SOLITARY, PRIORITY_PASSIVE_AVOID, PRIORITY_SURFACE, PRIORITY_SUBSTRATE } from '../behaviors/ForceBudget';
 import type { Obstacle } from '../behaviors/ObstacleData';
 import { SpatialHash } from '../spatial/SpatialHash';
 import { renderFish } from '../rendering/FishRenderer';
@@ -227,7 +227,7 @@ export class FishTankScene implements Scene {
             priority: PRIORITY_ALIGNMENT,
           });
           forces.push({
-            force: cohesion(fish, sameSpecies, schooling.cohesionWeight),
+            force: cohesion(fish, sameSpecies, schooling.cohesionWeight, schooling.perceptionRadius),
             priority: PRIORITY_COHESION,
           });
         }
@@ -267,13 +267,12 @@ export class FishTankScene implements Scene {
         });
       }
 
-      // --- Wander (lowest priority) ---
-      const wanderForce = wander(fish);
-      forces.push({ force: wanderForce, priority: PRIORITY_WANDER });
-
-      // Compose through force budget and apply
+      // Compose social/safety forces through budget
       const resultForce = composeForceBudget(forces, budget);
       fish.applyForce(resultForce);
+
+      // Wander applied directly — always contributes so fish can break from schools
+      fish.applyForce(wander(fish));
 
       // Z-axis forces (outside budget — simple, no priority conflicts)
       fish.applyZForce(wanderZ(fish) + avoidZBoundaries(fish));
