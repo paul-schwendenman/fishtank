@@ -5,7 +5,7 @@ import { Fish, type TankBounds } from '../entities/Fish';
 import { Bubble } from '../entities/Bubble';
 import { Particle } from '../entities/Particle';
 import { SPECIES } from '../entities/Species';
-import { wander, avoidBoundaries } from '../behaviors/Steering';
+import { wander, avoidBoundaries, wanderZ, avoidZBoundaries } from '../behaviors/Steering';
 import { renderFish } from '../rendering/FishRenderer';
 import { EnvironmentRenderer } from '../rendering/EnvironmentRenderer';
 import { renderBubble } from '../rendering/BubbleRenderer';
@@ -115,6 +115,7 @@ export class FishTankScene implements Scene {
         const boundaryForce = avoidBoundaries(fish, this.bounds);
         fish.applyForce(wanderForce);
         fish.applyForce(boundaryForce);
+        fish.applyZForce(wanderZ(fish) + avoidZBoundaries(fish));
       }
       fish.update(dt);
     }

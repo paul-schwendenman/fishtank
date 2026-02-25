@@ -1,5 +1,7 @@
 import type { Fish } from '../entities/Fish';
 
+const MIN_FORESHORTEN = 0.2;
+
 export function renderFish(ctx: CanvasRenderingContext2D, fish: Fish): void {
   const { species } = fish;
   const scale = fish.depthScale;
@@ -11,12 +13,14 @@ export function renderFish(ctx: CanvasRenderingContext2D, fish: Fish): void {
   // Depth-based color desaturation
   const depthDim = 1 - fish.depth * 0.3;
 
+  // Foreshortening from view angle (1.0 at profile → MIN_FORESHORTEN at head-on)
+  const foreshorten = Math.max(MIN_FORESHORTEN, Math.cos(fish.effectiveViewAngle));
+
   ctx.save();
   ctx.translate(fish.position.x, fish.position.y);
-  ctx.rotate(fish.facingAngle);
-  // When facing left, flip vertically so the fish doesn't appear upside-down
-  const facingLeft = Math.abs(fish.facingAngle) > Math.PI / 2;
-  ctx.scale(scale, facingLeft ? -scale : scale);
+  ctx.rotate(fish.facingAngle); // vertical tilt only (±PI/6)
+  // X-flip: dorsal always stays on top!
+  ctx.scale(fish.facingRight ? scale : -scale, scale);
   ctx.globalAlpha = alpha;
 
   const bodyLen = species.bodyLength;
@@ -24,16 +28,21 @@ export function renderFish(ctx: CanvasRenderingContext2D, fish: Fish): void {
   const tailSwing = Math.sin(fish.tailPhase) * 4 * species.tailSize;
   const finFlutter = Math.sin(fish.finPhase) * 2;
 
+  // Foreshortened x-dimensions
+  const fBodyLen = bodyLen * foreshorten;
+  const fBodyH = bodyH; // height stays the same
+
   // --- Tail fin ---
-  const tailLen = bodyLen * species.tailSize;
+  const tailLen = fBodyLen * species.tailSize;
+  const tailAmplitude = tailLen * 0.6 * foreshorten + tailLen * 0.6 * (1 - foreshorten) * 0.3;
   ctx.beginPath();
-  ctx.moveTo(-bodyLen * 0.45, 0);
-  ctx.lineTo(-bodyLen * 0.45 - tailLen, -tailLen * 0.6 + tailSwing);
+  ctx.moveTo(-fBodyLen * 0.45, 0);
+  ctx.lineTo(-fBodyLen * 0.45 - tailLen, -tailAmplitude + tailSwing * foreshorten);
   ctx.quadraticCurveTo(
-    -bodyLen * 0.45 - tailLen * 0.5,
-    tailSwing * 0.3,
-    -bodyLen * 0.45 - tailLen,
-    tailLen * 0.6 + tailSwing,
+    -fBodyLen * 0.45 - tailLen * 0.5,
+    tailSwing * 0.3 * foreshorten,
+    -fBodyLen * 0.45 - tailLen,
+    tailAmplitude + tailSwing * foreshorten,
   );
   ctx.closePath();
   ctx.fillStyle = applyDepthTint(species.finColor, depthDim);
@@ -41,18 +50,23 @@ export function renderFish(ctx: CanvasRenderingContext2D, fish: Fish): void {
 
   // --- Body ---
   ctx.beginPath();
-  // Species-specific body shape
   if (species.name === 'Angelfish') {
-    // Tall diamond-like body
-    ctx.moveTo(bodyLen * 0.5, 0);
-    ctx.bezierCurveTo(bodyLen * 0.3, -bodyH * 1.2, -bodyLen * 0.2, -bodyH * 1.1, -bodyLen * 0.45, 0);
-    ctx.bezierCurveTo(-bodyLen * 0.2, bodyH * 1.1, bodyLen * 0.3, bodyH * 1.2, bodyLen * 0.5, 0);
+    // Tall diamond-like body, foreshortened
+    ctx.moveTo(fBodyLen * 0.5, 0);
+    ctx.bezierCurveTo(
+      fBodyLen * 0.3, -fBodyH * 1.2,
+      -fBodyLen * 0.2, -fBodyH * 1.1,
+      -fBodyLen * 0.45, 0,
+    );
+    ctx.bezierCurveTo(
+      -fBodyLen * 0.2, fBodyH * 1.1,
+      fBodyLen * 0.3, fBodyH * 1.2,
+      fBodyLen * 0.5, 0,
+    );
   } else if (species.name === 'Pleco') {
-    // Flat, wide body
-    ctx.ellipse(0, 0, bodyLen * 0.5, bodyH * 0.7, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, fBodyLen * 0.5, fBodyH * 0.7, 0, 0, Math.PI * 2);
   } else {
-    // Standard fish ellipse
-    ctx.ellipse(0, 0, bodyLen * 0.5, bodyH, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, fBodyLen * 0.5, fBodyH, 0, 0, Math.PI * 2);
   }
   ctx.fillStyle = applyDepthTint(species.bodyColor, depthDim);
   ctx.fill();
@@ -61,28 +75,28 @@ export function renderFish(ctx: CanvasRenderingContext2D, fish: Fish): void {
   if (species.name === 'Neon Tetra') {
     // Iridescent blue stripe
     ctx.beginPath();
-    ctx.moveTo(bodyLen * 0.35, -1);
-    ctx.lineTo(-bodyLen * 0.1, -1);
-    ctx.lineTo(-bodyLen * 0.1, 1);
-    ctx.lineTo(bodyLen * 0.35, 1);
+    ctx.moveTo(fBodyLen * 0.35, -1);
+    ctx.lineTo(-fBodyLen * 0.1, -1);
+    ctx.lineTo(-fBodyLen * 0.1, 1);
+    ctx.lineTo(fBodyLen * 0.35, 1);
     ctx.fillStyle = applyDepthTint('#00ccff', depthDim);
     ctx.fill();
     // Red rear section
     ctx.beginPath();
-    ctx.moveTo(-bodyLen * 0.1, -bodyH * 0.5);
-    ctx.lineTo(-bodyLen * 0.4, -bodyH * 0.3);
-    ctx.lineTo(-bodyLen * 0.4, bodyH * 0.3);
-    ctx.lineTo(-bodyLen * 0.1, bodyH * 0.5);
+    ctx.moveTo(-fBodyLen * 0.1, -fBodyH * 0.5);
+    ctx.lineTo(-fBodyLen * 0.4, -fBodyH * 0.3);
+    ctx.lineTo(-fBodyLen * 0.4, fBodyH * 0.3);
+    ctx.lineTo(-fBodyLen * 0.1, fBodyH * 0.5);
     ctx.fillStyle = applyDepthTint('#ff2222', depthDim);
     ctx.fill();
   } else if (species.name === 'Angelfish') {
     // Vertical black stripes
     for (const xOff of [-0.05, 0.15]) {
       ctx.beginPath();
-      ctx.moveTo(bodyLen * xOff - 1, -bodyH * 0.9);
-      ctx.lineTo(bodyLen * xOff + 1, -bodyH * 0.9);
-      ctx.lineTo(bodyLen * xOff + 1, bodyH * 0.9);
-      ctx.lineTo(bodyLen * xOff - 1, bodyH * 0.9);
+      ctx.moveTo(fBodyLen * xOff - 1, -fBodyH * 0.9);
+      ctx.lineTo(fBodyLen * xOff + 1, -fBodyH * 0.9);
+      ctx.lineTo(fBodyLen * xOff + 1, fBodyH * 0.9);
+      ctx.lineTo(fBodyLen * xOff - 1, fBodyH * 0.9);
       ctx.fillStyle = applyDepthTint(species.accentColor, depthDim);
       ctx.fill();
     }
@@ -90,71 +104,74 @@ export function renderFish(ctx: CanvasRenderingContext2D, fish: Fish): void {
     // Horizontal orange and blue stripes
     for (let i = -2; i <= 2; i++) {
       ctx.beginPath();
-      const sy = i * bodyH * 0.35;
-      ctx.rect(-bodyLen * 0.35, sy - 1, bodyLen * 0.7, 2);
+      const sy = i * fBodyH * 0.35;
+      ctx.rect(-fBodyLen * 0.35, sy - 1, fBodyLen * 0.7, 2);
       ctx.fillStyle = applyDepthTint(i % 2 === 0 ? species.accentColor : species.bodyColor, depthDim);
       ctx.fill();
     }
   } else if (species.name === 'Corydoras') {
     // Spots
     for (let i = 0; i < 5; i++) {
-      const sx = (i - 2) * bodyLen * 0.15;
-      const sy = ((i % 2) - 0.5) * bodyH * 0.5;
+      const sx = (i - 2) * fBodyLen * 0.15;
+      const sy = ((i % 2) - 0.5) * fBodyH * 0.5;
       ctx.beginPath();
       ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
       ctx.fillStyle = applyDepthTint(species.accentColor, depthDim);
       ctx.fill();
     }
   } else if (species.name === 'Pleco') {
-    // Mottled pattern (deterministic positions)
+    // Mottled pattern
     const spots = [
       [-0.25, -0.2], [0.1, -0.3], [0.3, 0.1], [-0.1, 0.25],
       [0.2, -0.1], [-0.3, 0.05], [0.05, 0.15], [-0.15, -0.1],
     ];
     for (const [sx, sy] of spots) {
       ctx.beginPath();
-      ctx.arc(sx! * bodyLen, sy! * bodyH, 2, 0, Math.PI * 2);
+      ctx.arc(sx! * fBodyLen, sy! * fBodyH, 2, 0, Math.PI * 2);
       ctx.fillStyle = applyDepthTint(species.accentColor, depthDim);
       ctx.fill();
     }
   }
 
-  // --- Dorsal fin ---
-  const dorsalH = bodyH * species.dorsalSize;
+  // --- Dorsal fin (always on top) ---
+  const dorsalH = fBodyH * species.dorsalSize;
   ctx.beginPath();
-  ctx.moveTo(bodyLen * 0.15, -bodyH + 1);
+  ctx.moveTo(fBodyLen * 0.15, -fBodyH + 1);
   ctx.quadraticCurveTo(
-    bodyLen * 0.05,
-    -bodyH - dorsalH + finFlutter,
-    -bodyLen * 0.15,
-    -bodyH + 2,
+    fBodyLen * 0.05,
+    -fBodyH - dorsalH + finFlutter,
+    -fBodyLen * 0.15,
+    -fBodyH + 2,
   );
   ctx.fillStyle = applyDepthTint(species.finColor, depthDim);
   ctx.fill();
 
-  // --- Pectoral fin ---
-  const pecSize = bodyLen * species.pectoralSize;
+  // --- Pectoral fin (fades when head-on) ---
+  const pecSize = fBodyLen * species.pectoralSize;
+  const pecAlpha = alpha * foreshorten; // hidden when head-on
+  ctx.globalAlpha = pecAlpha;
   ctx.beginPath();
-  ctx.moveTo(bodyLen * 0.1, bodyH * 0.3);
+  ctx.moveTo(fBodyLen * 0.1, fBodyH * 0.3);
   ctx.quadraticCurveTo(
-    bodyLen * 0.05,
-    bodyH * 0.3 + pecSize + finFlutter,
-    -bodyLen * 0.05,
-    bodyH * 0.4,
+    fBodyLen * 0.05,
+    fBodyH * 0.3 + pecSize + finFlutter,
+    -fBodyLen * 0.05,
+    fBodyH * 0.4,
   );
   ctx.fillStyle = applyDepthTint(species.finColor, depthDim);
   ctx.fill();
+  ctx.globalAlpha = alpha;
 
   // --- Betta flowing fins ---
   if (species.name === 'Betta') {
     const flow = Math.sin(fish.tailPhase * 0.5) * 6;
     // Long dorsal
     ctx.beginPath();
-    ctx.moveTo(bodyLen * 0.3, -bodyH);
+    ctx.moveTo(fBodyLen * 0.3, -fBodyH);
     ctx.bezierCurveTo(
-      bodyLen * 0.1, -bodyH - 18 + flow,
-      -bodyLen * 0.2, -bodyH - 14 + flow * 0.7,
-      -bodyLen * 0.4, -bodyH + 2,
+      fBodyLen * 0.1, -fBodyH - 18 + flow,
+      -fBodyLen * 0.2, -fBodyH - 14 + flow * 0.7,
+      -fBodyLen * 0.4, -fBodyH + 2,
     );
     ctx.fillStyle = applyDepthTint(species.finColor, depthDim);
     ctx.globalAlpha = alpha * 0.7;
@@ -163,11 +180,11 @@ export function renderFish(ctx: CanvasRenderingContext2D, fish: Fish): void {
 
     // Long ventral fin
     ctx.beginPath();
-    ctx.moveTo(bodyLen * 0.1, bodyH);
+    ctx.moveTo(fBodyLen * 0.1, fBodyH);
     ctx.bezierCurveTo(
-      bodyLen * 0.05, bodyH + 16 - flow,
-      -bodyLen * 0.15, bodyH + 12 - flow * 0.7,
-      -bodyLen * 0.35, bodyH,
+      fBodyLen * 0.05, fBodyH + 16 - flow,
+      -fBodyLen * 0.15, fBodyH + 12 - flow * 0.7,
+      -fBodyLen * 0.35, fBodyH,
     );
     ctx.fillStyle = applyDepthTint(species.finColor, depthDim);
     ctx.globalAlpha = alpha * 0.6;
@@ -175,9 +192,9 @@ export function renderFish(ctx: CanvasRenderingContext2D, fish: Fish): void {
     ctx.globalAlpha = alpha;
   }
 
-  // --- Eye ---
-  const eyeX = bodyLen * 0.25;
-  const eyeY = -bodyH * 0.15;
+  // --- Eye (x-position foreshortened) ---
+  const eyeX = fBodyLen * 0.25;
+  const eyeY = -fBodyH * 0.15;
   ctx.beginPath();
   ctx.arc(eyeX, eyeY, species.eyeSize, 0, Math.PI * 2);
   ctx.fillStyle = '#111';
@@ -192,7 +209,6 @@ export function renderFish(ctx: CanvasRenderingContext2D, fish: Fish): void {
 }
 
 function applyDepthTint(color: string, dim: number): string {
-  // Parse hex color and apply depth-based dimming with blue shift
   const r = parseInt(color.slice(1, 3), 16);
   const g = parseInt(color.slice(3, 5), 16);
   const b = parseInt(color.slice(5, 7), 16);

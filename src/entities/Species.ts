@@ -20,6 +20,9 @@ export interface SpeciesConfig {
   eyeSize: number;
   depthPreference?: 'bottom' | 'surface' | 'mid';
   turnSmoothing: number;    // 0-1, lower = slower turns
+  maxZSpeed: number;        // max depth change rate
+  zWanderJitter: number;    // z-axis wander amount
+  turnDuration: number;     // seconds for left/right turn animation
 }
 
 export const SPECIES: Record<string, SpeciesConfig> = {
@@ -44,6 +47,9 @@ export const SPECIES: Record<string, SpeciesConfig> = {
     finColor: '#88ccff',
     eyeSize: 2.5,
     turnSmoothing: 0.15,
+    maxZSpeed: 0.15,
+    zWanderJitter: 0.3,
+    turnDuration: 0.2,
   },
   angelfish: {
     name: 'Angelfish',
@@ -66,6 +72,9 @@ export const SPECIES: Record<string, SpeciesConfig> = {
     finColor: '#c0c0c0',
     eyeSize: 3.5,
     turnSmoothing: 0.04,
+    maxZSpeed: 0.05,
+    zWanderJitter: 0.08,
+    turnDuration: 0.6,
   },
   guppy: {
     name: 'Guppy',
@@ -88,6 +97,9 @@ export const SPECIES: Record<string, SpeciesConfig> = {
     finColor: '#ff6622',
     eyeSize: 2.5,
     turnSmoothing: 0.12,
+    maxZSpeed: 0.12,
+    zWanderJitter: 0.25,
+    turnDuration: 0.25,
   },
   betta: {
     name: 'Betta',
@@ -110,6 +122,9 @@ export const SPECIES: Record<string, SpeciesConfig> = {
     finColor: '#cc2244',
     eyeSize: 3,
     turnSmoothing: 0.03,
+    maxZSpeed: 0.03,
+    zWanderJitter: 0.05,
+    turnDuration: 0.8,
   },
   corydoras: {
     name: 'Corydoras',
@@ -133,6 +148,9 @@ export const SPECIES: Record<string, SpeciesConfig> = {
     eyeSize: 2.5,
     depthPreference: 'bottom',
     turnSmoothing: 0.1,
+    maxZSpeed: 0.1,
+    zWanderJitter: 0.2,
+    turnDuration: 0.3,
   },
   pleco: {
     name: 'Pleco',
@@ -156,6 +174,9 @@ export const SPECIES: Record<string, SpeciesConfig> = {
     eyeSize: 2.5,
     depthPreference: 'bottom',
     turnSmoothing: 0.03,
+    maxZSpeed: 0.03,
+    zWanderJitter: 0.05,
+    turnDuration: 0.8,
   },
   dwarfGourami: {
     name: 'Dwarf Gourami',
@@ -178,5 +199,8 @@ export const SPECIES: Record<string, SpeciesConfig> = {
     finColor: '#e07040',
     eyeSize: 3,
     turnSmoothing: 0.06,
+    maxZSpeed: 0.08,
+    zWanderJitter: 0.15,
+    turnDuration: 0.4,
   },
 };
