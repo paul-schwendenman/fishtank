@@ -87,6 +87,14 @@ export class Fish {
     return this.viewAngle;
   }
 
+  /** Body heading as a unit vector (accounts for facingRight + tilt) */
+  get headingDir(): Vector {
+    return new Vector(
+      (this.facingRight ? 1 : -1) * Math.cos(this.facingAngle),
+      Math.sin(this.facingAngle),
+    );
+  }
+
   update(dt: number): void {
     // Spawn fade-in
     if (this.spawnOpacity < 1) {
@@ -96,14 +104,6 @@ export class Fish {
     // Idle system
     if (this.isIdle) {
       this.idleTimer -= dt;
-      const minDrift = this.species.maxSpeed * 0.05;
-      const decayRate = 2 * dt;
-      this.velocity = this.velocity.scale(1 - decayRate);
-      if (this.velocity.mag() < minDrift) {
-        this.velocity = Vector.fromAngle(
-          Math.atan2(this.velocity.y, this.facingRight ? 1 : -1),
-        ).scale(minDrift);
-      }
       if (this.idleTimer <= 0) {
         this.isIdle = false;
       }
@@ -127,6 +127,18 @@ export class Fish {
     const effectiveMaxSpeed = this.species.maxSpeed * this.speedMultiplier;
     this.velocity = this.velocity.limit(effectiveMaxSpeed);
 
+    // Lateral drag — fish are streamlined nose-to-tail, not sideways.
+    // Decompose velocity into forward (along body) and lateral (perpendicular),
+    // decay lateral much faster so the fish always moves where it's pointing.
+    const heading = this.headingDir;
+    const fwdSpeed = this.velocity.x * heading.x + this.velocity.y * heading.y;
+    const fwdVel = heading.scale(fwdSpeed);
+    const latVel = this.velocity.sub(fwdVel);
+    const steps = Math.min(dt * 60, 3);
+    const fwdDrag = Math.pow(0.997, steps);  // light forward drag — coasts for seconds
+    const latDrag = Math.pow(0.88, steps);   // heavy lateral drag — kills drift in ~10 frames
+    this.velocity = fwdVel.scale(fwdDrag).add(latVel.scale(latDrag));
+
     // Integrate 2D position
     this.position = this.position.add(this.velocity.scale(dt));
 
@@ -136,8 +148,7 @@ export class Fish {
     // Z-axis integration
     this.vz += this.az * dt * 60;
     this.vz = clamp(this.vz, -this.species.maxZSpeed, this.species.maxZSpeed);
-    // Dampen z-velocity slightly for stability
-    this.vz *= 0.98;
+    this.vz *= Math.pow(0.97, steps); // z-drag
     this.depth += this.vz * dt;
     this.depth = clamp(this.depth, 0, 1);
     this.az = 0;
@@ -146,7 +157,7 @@ export class Fish {
     const vx = this.velocity.x;
     if (this.facingRight && vx < -FACING_HYSTERESIS) {
       this.facingRight = false;
-      this.turnPhase = 0; // start turn animation
+      this.turnPhase = 0;
     } else if (!this.facingRight && vx > FACING_HYSTERESIS) {
       this.facingRight = true;
       this.turnPhase = 0;
@@ -158,11 +169,14 @@ export class Fish {
     }
 
     // Update facing angle (vertical tilt only)
+    // Rotation rate scales with speed — fish can't spin in place.
+    // At low speed the tilt freezes, preserving the last heading while coasting.
     const speed = this.velocity.mag();
-    if (speed > this.species.maxSpeed * 0.1) {
+    const speedFraction = clamp(speed / this.species.maxSpeed, 0, 1);
+    if (speed > this.species.maxSpeed * 0.15) {
       const targetTilt = Math.atan2(this.velocity.y, Math.abs(this.velocity.x));
-      const tiltSmoothing = this.species.turnSmoothing * Math.min(dt * 60, 3);
-      this.facingAngle += (targetTilt - this.facingAngle) * tiltSmoothing;
+      const tiltRate = 0.18 * speedFraction * steps;
+      this.facingAngle += (targetTilt - this.facingAngle) * Math.min(tiltRate, 1);
     }
     this.facingAngle = clamp(this.facingAngle, -MAX_TILT, MAX_TILT);
 
