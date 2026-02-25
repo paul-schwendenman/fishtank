@@ -6,6 +6,12 @@ import { Bubble } from '../entities/Bubble';
 import { Particle } from '../entities/Particle';
 import { SPECIES } from '../entities/Species';
 import { wander, avoidBoundaries, wanderZ, avoidZBoundaries } from '../behaviors/Steering';
+import { getPerceivedNeighbors } from '../behaviors/Perception';
+import { separation, alignment, cohesion, solitarySpacing, passiveAvoidance } from '../behaviors/SocialSteering';
+import { avoidObstacles, seekSurface, substrateBehavior } from '../behaviors/EnvironmentSteering';
+import { composeForceBudget, type PrioritizedForce, PRIORITY_BOUNDARY, PRIORITY_OBSTACLE, PRIORITY_SEPARATION, PRIORITY_ALIGNMENT, PRIORITY_COHESION, PRIORITY_SOLITARY, PRIORITY_PASSIVE_AVOID, PRIORITY_WANDER, PRIORITY_SURFACE, PRIORITY_SUBSTRATE } from '../behaviors/ForceBudget';
+import type { Obstacle } from '../behaviors/ObstacleData';
+import { SpatialHash } from '../spatial/SpatialHash';
 import { renderFish } from '../rendering/FishRenderer';
 import { EnvironmentRenderer } from '../rendering/EnvironmentRenderer';
 import { renderBubble } from '../rendering/BubbleRenderer';
@@ -15,6 +21,8 @@ const TANK_MARGIN = 40;
 const BUBBLE_SPAWN_INTERVAL = 0.3;
 const PARTICLE_COUNT = 25;
 const BUBBLE_FADE_ZONE = 60;
+const PASSIVE_AVOID_RADIUS = 50;
+const OBSTACLE_LOOKAHEAD = 80;
 
 interface FishPreset {
   species: string;
@@ -41,12 +49,15 @@ export class FishTankScene implements Scene {
   private environment: EnvironmentRenderer;
   private time: number = 0;
   private bubbleTimer: number = 0;
+  private spatialHash = new SpatialHash<Fish>(100);
+  private obstacles: Obstacle[] = [];
 
   constructor(width: number, height: number) {
     this.width = width;
     this.height = height;
     this.bounds = this.computeBounds();
     this.environment = new EnvironmentRenderer(this.bounds);
+    this.cacheObstacles();
     this.spawnFish(TROPICAL_COMMUNITY);
     this.spawnParticles();
   }
@@ -58,6 +69,30 @@ export class FishTankScene implements Scene {
       top: TANK_MARGIN,
       bottom: this.height - TANK_MARGIN - 35, // above substrate
     };
+  }
+
+  private cacheObstacles(): void {
+    this.obstacles = [];
+
+    // Rocks as obstacles
+    for (const rock of this.environment.obstacleData) {
+      this.obstacles.push({
+        center: new Vector(rock.x, rock.y),
+        halfWidth: rock.width * 0.5,
+        halfHeight: rock.height * 0.5,
+        padding: 15,
+      });
+    }
+
+    // Plants as thin vertical obstacles
+    for (const plant of this.environment.plantData) {
+      this.obstacles.push({
+        center: new Vector(plant.x, plant.baseY - plant.height * 0.5),
+        halfWidth: 8,
+        halfHeight: plant.height * 0.5,
+        padding: 10,
+      });
+    }
   }
 
   private spawnFish(preset: FishPreset[]): void {
@@ -103,20 +138,146 @@ export class FishTankScene implements Scene {
     this.height = height;
     this.bounds = this.computeBounds();
     this.environment.resize(this.bounds);
+    this.cacheObstacles();
   }
 
   update(dt: number): void {
     this.time += dt;
 
-    // Update fish
+    // Rebuild spatial hash
+    this.spatialHash.clear();
     for (const fish of this.fish) {
-      if (!fish.isIdle) {
-        const wanderForce = wander(fish);
-        const boundaryForce = avoidBoundaries(fish, this.bounds);
-        fish.applyForce(wanderForce);
-        fish.applyForce(boundaryForce);
-        fish.applyZForce(wanderZ(fish) + avoidZBoundaries(fish));
+      this.spatialHash.insert(fish, fish.position.x, fish.position.y);
+    }
+
+    // Update fish with social and environmental forces
+    for (const fish of this.fish) {
+      // Surface visit timer countdown
+      if (fish.surfaceVisitTimer > 0) {
+        fish.surfaceVisitTimer -= dt;
       }
+
+      if (fish.isIdle) {
+        // Pleco latch: when idling, steer toward a nearby rock surface
+        if (fish.species.plecoLatch && !fish.plecoLatchTarget) {
+          for (const obs of this.obstacles) {
+            const dist = fish.position.dist(obs.center);
+            if (dist < obs.halfWidth + obs.halfHeight + 30) {
+              // Latch to the top surface of the rock
+              fish.plecoLatchTarget = new Vector(obs.center.x, obs.center.y - obs.halfHeight);
+              break;
+            }
+          }
+        }
+
+        if (fish.plecoLatchTarget) {
+          const toTarget = fish.plecoLatchTarget.sub(fish.position);
+          if (toTarget.mag() > 5) {
+            fish.applyForce(toTarget.normalize().scale(fish.species.maxForce * 0.3));
+          }
+        }
+
+        fish.update(dt);
+        continue;
+      }
+
+      // Clear pleco latch when not idle
+      fish.plecoLatchTarget = null;
+
+      const forces: PrioritizedForce[] = [];
+      const budget = fish.species.maxForce * 3;
+
+      // Query neighbors from spatial hash
+      const maxQueryRadius = Math.max(
+        fish.species.schooling?.perceptionRadius ?? 0,
+        fish.species.solitaryRadius ?? 0,
+        PASSIVE_AVOID_RADIUS,
+      );
+      const rawNeighbors = this.spatialHash.query(
+        fish.position.x, fish.position.y, maxQueryRadius,
+      );
+
+      // Perception filter
+      const perceived = getPerceivedNeighbors(fish, rawNeighbors, maxQueryRadius);
+
+      // --- Boundary avoidance (highest priority) ---
+      const boundaryForce = avoidBoundaries(fish, this.bounds);
+      forces.push({ force: boundaryForce, priority: PRIORITY_BOUNDARY });
+
+      // --- Obstacle avoidance ---
+      const obsForce = avoidObstacles(fish, this.obstacles, OBSTACLE_LOOKAHEAD);
+      forces.push({ force: obsForce, priority: PRIORITY_OBSTACLE });
+
+      // --- Social forces ---
+      const schooling = fish.species.schooling;
+      if (schooling) {
+        // Filter to same-species neighbors within perception radius
+        const sameSpecies = perceived.filter(
+          other => other.species === fish.species
+            && fish.position.dist(other.position) < schooling.perceptionRadius,
+        );
+
+        if (sameSpecies.length > 0) {
+          forces.push({
+            force: separation(fish, sameSpecies, schooling.separationRadius, schooling.separationWeight),
+            priority: PRIORITY_SEPARATION,
+          });
+          forces.push({
+            force: alignment(fish, sameSpecies, schooling.alignmentWeight),
+            priority: PRIORITY_ALIGNMENT,
+          });
+          forces.push({
+            force: cohesion(fish, sameSpecies, schooling.cohesionWeight),
+            priority: PRIORITY_COHESION,
+          });
+        }
+      }
+
+      // Solitary spacing
+      if (fish.species.solitaryRadius && fish.species.solitaryWeight) {
+        forces.push({
+          force: solitarySpacing(fish, perceived, fish.species.solitaryRadius, fish.species.solitaryWeight),
+          priority: PRIORITY_SOLITARY,
+        });
+      }
+
+      // Passive avoidance (all fish avoid collisions with each other)
+      const avoidForce = passiveAvoidance(fish, perceived, PASSIVE_AVOID_RADIUS);
+      forces.push({ force: avoidForce, priority: PRIORITY_PASSIVE_AVOID });
+
+      // --- Environmental forces ---
+
+      // Surface visits (guppy/gourami)
+      if (fish.surfaceVisitTimer > 0) {
+        forces.push({
+          force: seekSurface(fish, this.bounds),
+          priority: PRIORITY_SURFACE,
+        });
+      } else if (fish.species.surfaceVisitChance && fish.species.surfaceVisitDuration) {
+        if (Math.random() < fish.species.surfaceVisitChance * dt) {
+          fish.surfaceVisitTimer = fish.species.surfaceVisitDuration;
+        }
+      }
+
+      // Corydoras substrate behavior
+      if (fish.species.substrateAffinity) {
+        forces.push({
+          force: substrateBehavior(fish, this.bounds.bottom),
+          priority: PRIORITY_SUBSTRATE,
+        });
+      }
+
+      // --- Wander (lowest priority) ---
+      const wanderForce = wander(fish);
+      forces.push({ force: wanderForce, priority: PRIORITY_WANDER });
+
+      // Compose through force budget and apply
+      const resultForce = composeForceBudget(forces, budget);
+      fish.applyForce(resultForce);
+
+      // Z-axis forces (outside budget — simple, no priority conflicts)
+      fish.applyZForce(wanderZ(fish) + avoidZBoundaries(fish));
+
       fish.update(dt);
     }
 

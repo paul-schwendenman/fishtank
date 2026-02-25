@@ -38,6 +38,10 @@ export class Vector {
     return Math.atan2(this.y, this.x);
   }
 
+  dot(v: Vector): number {
+    return this.x * v.x + this.y * v.y;
+  }
+
   dist(v: Vector): number {
     return this.sub(v).mag();
   }

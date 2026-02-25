@@ -161,6 +161,14 @@ export class EnvironmentRenderer {
     this.aeratorX = left + width * 0.8;
   }
 
+  get obstacleData(): Array<{ x: number; y: number; width: number; height: number }> {
+    return this.rocks.map(r => ({ x: r.x, y: r.y, width: r.width, height: r.height }));
+  }
+
+  get plantData(): Array<{ x: number; baseY: number; height: number; layer: 'back' | 'front' }> {
+    return this.plants.map(p => ({ x: p.x, baseY: p.baseY, height: p.height, layer: p.layer }));
+  }
+
   get aeratorPosition(): { x: number; y: number } {
     return { x: this.aeratorX, y: this.bounds.bottom };
   }

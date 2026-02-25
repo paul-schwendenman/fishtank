@@ -23,6 +23,20 @@ export interface SpeciesConfig {
   maxZSpeed: number;        // max depth change rate
   zWanderJitter: number;    // z-axis wander amount
   turnDuration: number;     // seconds for left/right turn animation
+  schooling?: {
+    perceptionRadius: number;
+    separationRadius: number;
+    separationWeight: number;
+    alignmentWeight: number;
+    cohesionWeight: number;
+  };
+  solitaryRadius?: number;
+  solitaryWeight?: number;
+  avoidObstacleWeight?: number;
+  surfaceVisitChance?: number;
+  surfaceVisitDuration?: number;
+  substrateAffinity?: boolean;
+  plecoLatch?: boolean;
 }
 
 export const SPECIES: Record<string, SpeciesConfig> = {
@@ -50,6 +64,13 @@ export const SPECIES: Record<string, SpeciesConfig> = {
     maxZSpeed: 0.15,
     zWanderJitter: 0.3,
     turnDuration: 0.2,
+    schooling: {
+      perceptionRadius: 80,
+      separationRadius: 20,
+      separationWeight: 2.0,
+      alignmentWeight: 1.5,
+      cohesionWeight: 1.0,
+    },
   },
   angelfish: {
     name: 'Angelfish',
@@ -75,6 +96,8 @@ export const SPECIES: Record<string, SpeciesConfig> = {
     maxZSpeed: 0.05,
     zWanderJitter: 0.08,
     turnDuration: 0.6,
+    solitaryRadius: 100,
+    solitaryWeight: 1.5,
   },
   guppy: {
     name: 'Guppy',
@@ -100,6 +123,15 @@ export const SPECIES: Record<string, SpeciesConfig> = {
     maxZSpeed: 0.12,
     zWanderJitter: 0.25,
     turnDuration: 0.25,
+    schooling: {
+      perceptionRadius: 70,
+      separationRadius: 16,
+      separationWeight: 1.2,
+      alignmentWeight: 0.8,
+      cohesionWeight: 0.5,
+    },
+    surfaceVisitChance: 0.02,
+    surfaceVisitDuration: 2.0,
   },
   betta: {
     name: 'Betta',
@@ -125,6 +157,8 @@ export const SPECIES: Record<string, SpeciesConfig> = {
     maxZSpeed: 0.03,
     zWanderJitter: 0.05,
     turnDuration: 0.8,
+    solitaryRadius: 120,
+    solitaryWeight: 2.0,
   },
   corydoras: {
     name: 'Corydoras',
@@ -151,6 +185,14 @@ export const SPECIES: Record<string, SpeciesConfig> = {
     maxZSpeed: 0.1,
     zWanderJitter: 0.2,
     turnDuration: 0.3,
+    schooling: {
+      perceptionRadius: 60,
+      separationRadius: 18,
+      separationWeight: 1.2,
+      alignmentWeight: 0.4,
+      cohesionWeight: 1.0,
+    },
+    substrateAffinity: true,
   },
   pleco: {
     name: 'Pleco',
@@ -177,6 +219,7 @@ export const SPECIES: Record<string, SpeciesConfig> = {
     maxZSpeed: 0.03,
     zWanderJitter: 0.05,
     turnDuration: 0.8,
+    plecoLatch: true,
   },
   dwarfGourami: {
     name: 'Dwarf Gourami',
@@ -202,5 +245,9 @@ export const SPECIES: Record<string, SpeciesConfig> = {
     maxZSpeed: 0.08,
     zWanderJitter: 0.15,
     turnDuration: 0.4,
+    solitaryRadius: 80,
+    solitaryWeight: 1.0,
+    surfaceVisitChance: 0.015,
+    surfaceVisitDuration: 3.0,
   },
 };

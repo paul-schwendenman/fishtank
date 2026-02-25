@@ -36,6 +36,12 @@ export class Fish {
   facingRight: boolean;
   turnPhase: number = 1;  // 0 = mid-turn, 1 = settled
 
+  // Surface visit (guppy/gourami)
+  surfaceVisitTimer: number = 0;
+
+  // Pleco latch target
+  plecoLatchTarget: Vector | null = null;
+
   constructor(species: SpeciesConfig, position: Vector, depth: number) {
     this.species = species;
     this.position = position;
@@ -119,7 +125,7 @@ export class Fish {
 
     if (!this.isIdle) {
       // Apply accumulated 2D forces
-      const force = this.acceleration.limit(this.species.maxForce);
+      const force = this.acceleration.limit(this.species.maxForce * 3);
       this.velocity = this.velocity.add(force.scale(dt * 60));
     }
 
