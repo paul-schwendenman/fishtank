@@ -14,7 +14,9 @@ export function renderFish(ctx: CanvasRenderingContext2D, fish: Fish): void {
   ctx.save();
   ctx.translate(fish.position.x, fish.position.y);
   ctx.rotate(fish.facingAngle);
-  ctx.scale(scale, scale);
+  // When facing left, flip vertically so the fish doesn't appear upside-down
+  const facingLeft = Math.abs(fish.facingAngle) > Math.PI / 2;
+  ctx.scale(scale, facingLeft ? -scale : scale);
   ctx.globalAlpha = alpha;
 
   const bodyLen = species.bodyLength;

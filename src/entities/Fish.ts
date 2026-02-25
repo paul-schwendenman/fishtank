@@ -62,7 +62,13 @@ export class Fish {
     // Idle system
     if (this.isIdle) {
       this.idleTimer -= dt;
-      this.velocity = this.velocity.scale(1 - 3 * dt); // decay velocity
+      // Decay toward a gentle drift, not a full stop
+      const minDrift = this.species.maxSpeed * 0.05;
+      const decayRate = 2 * dt;
+      this.velocity = this.velocity.scale(1 - decayRate);
+      if (this.velocity.mag() < minDrift) {
+        this.velocity = Vector.fromAngle(this.facingAngle).scale(minDrift);
+      }
       if (this.idleTimer <= 0) {
         this.isIdle = false;
       }
@@ -95,7 +101,7 @@ export class Fish {
 
     // Update facing angle (smooth turn)
     const speed = this.velocity.mag();
-    if (speed > 1) {
+    if (speed > this.species.maxSpeed * 0.1) {
       const targetAngle = this.velocity.heading();
       this.facingAngle = lerpAngle(
         this.facingAngle,
