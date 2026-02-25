@@ -30,13 +30,13 @@ interface FishPreset {
 }
 
 const TROPICAL_COMMUNITY: FishPreset[] = [
-  { species: 'neonTetra', count: 8 },
-  { species: 'angelfish', count: 2 },
-  { species: 'guppy', count: 4 },
+  { species: 'neonTetra', count: 24 },
+  { species: 'angelfish', count: 4 },
+  { species: 'guppy', count: 8 },
   { species: 'betta', count: 1 },
-  { species: 'corydoras', count: 3 },
+  { species: 'corydoras', count: 6 },
   { species: 'pleco', count: 1 },
-  { species: 'dwarfGourami', count: 2 },
+  { species: 'dwarfGourami', count: 4 },
 ];
 
 export class FishTankScene implements Scene {

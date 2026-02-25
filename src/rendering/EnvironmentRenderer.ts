@@ -61,14 +61,27 @@ export class EnvironmentRenderer {
 
     // Generate plants
     this.plants = [];
-    const plantPositions = [0.05, 0.15, 0.3, 0.55, 0.75, 0.92];
-    const backPlants = [0, 2, 4];
-    plantPositions.forEach((xPct, i) => {
-      const isBack = backPlants.includes(i);
-      const x = left + width * xPct;
-      const height = 80 + Math.random() * 120;
-      const segments = 5 + Math.floor(Math.random() * 4);
-      const greens = ['#1a5c2a', '#2d7a3e', '#1e6830', '#3a8c4f', '#245c32', '#4a9c5c'];
+    const plantPositions = [
+      { x: 0.02, layer: 'back' as const },
+      { x: 0.08, layer: 'front' as const },
+      { x: 0.14, layer: 'back' as const },
+      { x: 0.22, layer: 'front' as const },
+      { x: 0.30, layer: 'back' as const },
+      { x: 0.38, layer: 'front' as const },
+      { x: 0.48, layer: 'back' as const },
+      { x: 0.55, layer: 'front' as const },
+      { x: 0.65, layer: 'back' as const },
+      { x: 0.72, layer: 'front' as const },
+      { x: 0.80, layer: 'back' as const },
+      { x: 0.88, layer: 'front' as const },
+      { x: 0.94, layer: 'back' as const },
+    ];
+    const greens = ['#1a5c2a', '#2d7a3e', '#1e6830', '#3a8c4f', '#245c32', '#4a9c5c'];
+    plantPositions.forEach((pos) => {
+      const isBack = pos.layer === 'back';
+      const x = left + width * (pos.x + (Math.random() - 0.5) * 0.03);
+      const height = 120 + Math.random() * 160;
+      const segments = 6 + Math.floor(Math.random() * 5);
       const color = isBack
         ? '#1a4c2a'  // muted for back
         : greens[Math.floor(Math.random() * greens.length)]!;
@@ -80,10 +93,10 @@ export class EnvironmentRenderer {
         segments,
         color,
         phase: Math.random() * Math.PI * 2,
-        amplitude: 5 + Math.random() * 10,
+        amplitude: 6 + Math.random() * 12,
         period: 3 + Math.random() * 3,
-        width: 3 + Math.random() * 4,
-        layer: isBack ? 'back' : 'front',
+        width: 4 + Math.random() * 5,
+        layer: pos.layer,
       });
     });
 
