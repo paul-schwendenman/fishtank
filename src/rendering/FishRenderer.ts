@@ -25,9 +25,12 @@ export function renderFish(ctx: CanvasRenderingContext2D, fish: Fish): void {
   // X-flip first so rotation tilts correctly for both directions
   ctx.scale(fish.facingRight ? scale : -scale, scale);
 
-  // Body roll on turns: vertical squish when changing direction
+  // Body roll on turns: gentle vertical squish when changing direction
+  // Ease-out curve so the squish peaks softly and settles smoothly
   if (fish.turnPhase < 1) {
-    ctx.scale(1, 1 - (1 - fish.turnPhase) * 0.25);
+    const t = 1 - fish.turnPhase; // 1 at turn start → 0 when settled
+    const eased = t * t * (3 - 2 * t);  // smoothstep: soft peak, gentle settle
+    ctx.scale(1, 1 - eased * 0.12);
   }
 
   ctx.rotate(fish.facingAngle);
