@@ -96,32 +96,42 @@ export class FishTankScene implements Scene {
   }
 
   private spawnFish(preset: FishPreset[]): void {
-    let spawnDelay = 0;
+    // Expand preset into individual species configs, then shuffle
+    const configs: typeof SPECIES[string][] = [];
     for (const { species, count } of preset) {
       const config = SPECIES[species];
       if (!config) continue;
       for (let i = 0; i < count; i++) {
-        let depth: number;
-        if (config.depthPreference === 'bottom') {
-          depth = randomRange(0.5, 0.8);
-        } else {
-          depth = randomRange(0.1, 0.9);
-        }
-
-        const x = randomRange(this.bounds.left + 60, this.bounds.right - 60);
-        let y: number;
-        if (config.depthPreference === 'bottom') {
-          y = randomRange(this.bounds.bottom - 60, this.bounds.bottom - 15);
-        } else {
-          y = randomRange(this.bounds.top + 40, this.bounds.bottom - 40);
-        }
-
-        const fish = new Fish(config, new Vector(x, y), depth);
-        // Stagger spawn opacity for fade-in effect
-        fish.spawnOpacity = -spawnDelay; // will be clamped to 0 until timer catches up
-        spawnDelay += randomRange(0.1, 0.3);
-        this.fish.push(fish);
+        configs.push(config);
       }
+    }
+    // Fisher-Yates shuffle
+    for (let i = configs.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [configs[i], configs[j]] = [configs[j]!, configs[i]!];
+    }
+
+    let spawnDelay = 0;
+    for (const config of configs) {
+      let depth: number;
+      if (config.depthPreference === 'bottom') {
+        depth = randomRange(0.5, 0.8);
+      } else {
+        depth = randomRange(0.1, 0.9);
+      }
+
+      const x = randomRange(this.bounds.left + 60, this.bounds.right - 60);
+      let y: number;
+      if (config.depthPreference === 'bottom') {
+        y = randomRange(this.bounds.bottom - 60, this.bounds.bottom - 15);
+      } else {
+        y = randomRange(this.bounds.top + 40, this.bounds.bottom - 40);
+      }
+
+      const fish = new Fish(config, new Vector(x, y), depth);
+      fish.spawnOpacity = -spawnDelay;
+      spawnDelay += randomRange(0.1, 0.3);
+      this.fish.push(fish);
     }
   }
 
