@@ -89,7 +89,7 @@ export class EnvironmentRenderer {
 
       this.plants.push({
         x,
-        baseY: bottom,
+        baseY: bottom - depth * 20,
         height,
         segments,
         color,
@@ -228,14 +228,23 @@ export class EnvironmentRenderer {
 
   renderSubstrate(ctx: CanvasRenderingContext2D, canvasW: number, canvasH: number): void {
     const { bottom } = this.bounds;
+    const depthSlope = 20; // how far the substrate recedes upward
+
+    // Upper slope — fades from transparent to substrate color, giving depth
+    const slopeGrad = ctx.createLinearGradient(0, bottom - depthSlope, 0, bottom);
+    slopeGrad.addColorStop(0, 'rgba(138, 122, 90, 0)');
+    slopeGrad.addColorStop(0.5, 'rgba(138, 122, 90, 0.4)');
+    slopeGrad.addColorStop(1, 'rgba(138, 122, 90, 1)');
+    ctx.fillStyle = slopeGrad;
+    ctx.fillRect(0, bottom - depthSlope, canvasW, depthSlope);
 
     // Main substrate — fill to bottom of canvas
-    const grad = ctx.createLinearGradient(0, bottom - 5, 0, canvasH);
+    const grad = ctx.createLinearGradient(0, bottom, 0, canvasH);
     grad.addColorStop(0, '#8a7a5a');
     grad.addColorStop(0.3, '#7a6a4a');
     grad.addColorStop(1, '#5a4a30');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, bottom - 5, canvasW, canvasH - bottom + 10);
+    ctx.fillRect(0, bottom, canvasW, canvasH - bottom);
 
     // Pebbles
     ctx.fillStyle = '#9a8a6a';
