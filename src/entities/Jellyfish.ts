@@ -135,7 +135,7 @@ export class Jellyfish {
 
     // Drag: stronger during coast (relaxed), lighter during thrust (contracting)
     // This gives a clear accelerate → coast → slow cycle
-    const baseDrag = this.contracting ? 0.992 : 0.975;
+    const baseDrag = this.contracting ? 0.996 : 0.99;
     const dragFactor = Math.pow(baseDrag, Math.min(dt * 60, 3));
     this.velocity = this.velocity.scale(dragFactor);
 

@@ -16,7 +16,7 @@ import { SpatialHash } from '../spatial/SpatialHash';
 import { JellyfishTankRenderer } from '../rendering/JellyfishTankRenderer';
 import { renderJellyfish } from '../rendering/JellyfishRenderer';
 
-const JELLYFISH_COUNT = 7;
+const JELLYFISH_COUNT = 14;
 const SEPARATION_RADIUS = 80;
 // How far offscreen before recycling
 const OFFSCREEN_MARGIN = 200;
