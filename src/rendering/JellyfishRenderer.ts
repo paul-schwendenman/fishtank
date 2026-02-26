@@ -66,16 +66,19 @@ function renderTentacles(
 
   ctx.lineCap = 'round';
 
+  // Convert position history trail into local space (undo heading rotation)
+  const cosH = Math.cos(-jelly.heading);
+  const sinH = Math.sin(-jelly.heading);
+
   for (let i = 0; i < tc.count; i++) {
-    const angle = (i / tc.count) * Math.PI - Math.PI / 2 + Math.PI / 4;
-    // Tentacle attachment point on bell rim
-    const attachX = Math.cos(angle) * bellR * pulseWidthScale * 0.9;
+    // Spread evenly across the bell rim from -bellR to +bellR
+    const frac = tc.count > 1 ? i / (tc.count - 1) : 0.5;
+    const attachX = (frac - 0.5) * 2 * bellR * pulseWidthScale * 0.9;
     const attachY = 0; // Bell bottom
 
     const tentLen = jelly.tentacleLengths[i]!;
     const phaseOff = jelly.tentaclePhaseOffsets[i]!;
 
-    // Opacity fades from base to tip
     const baseAlpha = clamp(variety.bellOpacity + 0.15, 0, 0.5);
 
     ctx.beginPath();
@@ -85,23 +88,25 @@ function renderTentacles(
     for (let s = 1; s <= segments; s++) {
       const t = s / segments;
 
-      // Hybrid: trailing from position history + parametric sine undulation
+      // Trail from position history, transformed into local space
       const histIdx = Math.floor((1 - t) * (history.length - 1));
       const histPoint = history[Math.max(0, histIdx)]!;
-      const trailOffset = histPoint.sub(currentPos).scale(t * 0.3);
+      const dx = (histPoint.x - currentPos.x) * t * 0.3;
+      const dy = (histPoint.y - currentPos.y) * t * 0.3;
+      const localTrailX = dx * cosH - dy * sinH;
+      const localTrailY = dx * sinH + dy * cosH;
 
       const waveX = Math.sin(time * tc.waveFrequency + t * 4 + phaseOff) * tc.waveAmplitude * t;
       const waveY = tentLen * t;
 
       ctx.lineTo(
-        attachX + trailOffset.x + waveX,
-        attachY + waveY + trailOffset.y * 0.5,
+        attachX + localTrailX + waveX,
+        attachY + waveY + localTrailY * 0.5,
       );
     }
 
-    // Taper line width
     ctx.strokeStyle = variety.edgeColor;
-    ctx.lineWidth = tc.thickness * (1 - 0.5 * 0); // uniform, taper via segments
+    ctx.lineWidth = tc.thickness;
     ctx.globalAlpha *= baseAlpha / 0.5;
     ctx.stroke();
     ctx.globalAlpha /= baseAlpha / 0.5;
