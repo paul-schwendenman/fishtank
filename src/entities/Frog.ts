@@ -24,13 +24,9 @@ export class Frog {
   leapDuration: number = 0.5;
   leapHeight: number = 0;
 
-  // Swimming
+  // Swimming / floating (shared kick-based movement)
   swimTarget: Vector = Vector.zero();
   velocity: Vector = Vector.zero();
-
-  // Floating
-  floatDriftAngle: number = 0;
-  floatDriftSpeed: number = 0;
   floatTimer: number = 0; // how long to float before deciding next action
   kickTimer: number = 0;
   kickPhase: number = 0;
@@ -75,6 +71,10 @@ export class Frog {
     this.swimTarget = target;
     this.sittingPadIndex = targetPadIndex;
     this.isOnBank = false;
+    this.velocity = Vector.zero();
+    this.isKicking = true;
+    this.kickPhase = 0;
+    this.kickTimer = 0;
     const dir = target.sub(this.position);
     if (dir.mag() > 0) {
       this.heading = dir.heading();
@@ -85,10 +85,9 @@ export class Frog {
     this.state = 'floating';
     this.sittingPadIndex = -1;
     this.isOnBank = false;
-    this.floatDriftAngle = this.heading + randomRange(-0.5, 0.5);
-    this.floatDriftSpeed = randomRange(2, 6);
+    this.velocity = Vector.zero();
     this.floatTimer = randomRange(4, 15);
-    this.kickTimer = randomRange(1.5, 4);
+    this.kickTimer = randomRange(1, 3);
     this.isKicking = false;
     this.kickPhase = 0;
   }
@@ -141,9 +140,29 @@ export class Frog {
           this.state = 'sitting';
           this.sittingTimer = randomRange(5, 20);
         } else {
+          // Turn toward target
           const dir = toTarget.normalize();
           this.heading = lerpAngle(this.heading, dir.heading(), 0.1);
-          this.velocity = dir.scale(40);
+
+          // Kick-based propulsion
+          this.kickTimer -= dt;
+          if (this.isKicking) {
+            this.kickPhase += dt * 6;
+            if (this.kickPhase > Math.PI) {
+              this.isKicking = false;
+              this.kickTimer = randomRange(0.3, 0.8);
+            } else {
+              // Kick burst in heading direction
+              const kickForce = Math.sin(this.kickPhase) * 120;
+              this.velocity = Vector.fromAngle(this.heading).scale(kickForce);
+            }
+          } else if (this.kickTimer <= 0) {
+            this.isKicking = true;
+            this.kickPhase = 0;
+          }
+
+          // Coast: decelerate between kicks
+          this.velocity = this.velocity.scale(Math.pow(0.02, dt)); // heavy drag
           this.position = this.position.add(this.velocity.scale(dt));
         }
         break;
@@ -152,35 +171,28 @@ export class Frog {
       case 'floating': {
         this.floatTimer -= dt;
 
-        // Gentle drift
-        const drift = Vector.fromAngle(this.floatDriftAngle).scale(this.floatDriftSpeed * dt);
-        this.position = this.position.add(drift);
-
-        // Slow drift direction wander
-        this.floatDriftAngle += randomRange(-0.3, 0.3) * dt;
-
-        // Occasional kicks that add a small burst of movement
+        // Kick-based propulsion (less frequent, less forceful than swimming)
         this.kickTimer -= dt;
         if (this.isKicking) {
-          this.kickPhase += dt * 6;
+          this.kickPhase += dt * 5;
           if (this.kickPhase > Math.PI) {
             this.isKicking = false;
             this.kickTimer = randomRange(2, 5);
           } else {
-            // Kick propels frog slightly in heading direction
-            const kickForce = Math.sin(this.kickPhase) * 20 * dt;
-            this.position = this.position.add(Vector.fromAngle(this.heading).scale(kickForce));
+            // Gentle kick in heading direction
+            const kickForce = Math.sin(this.kickPhase) * 60;
+            this.velocity = Vector.fromAngle(this.heading).scale(kickForce);
           }
         } else if (this.kickTimer <= 0) {
           this.isKicking = true;
           this.kickPhase = 0;
           // Slight heading adjustment with each kick
           this.heading += randomRange(-0.4, 0.4);
-          this.floatDriftAngle = this.heading + randomRange(-0.3, 0.3);
         }
 
-        // Slow heading drift toward drift angle
-        this.heading = lerpAngle(this.heading, this.floatDriftAngle, 0.02);
+        // Coast: decelerate between kicks
+        this.velocity = this.velocity.scale(Math.pow(0.02, dt)); // heavy drag
+        this.position = this.position.add(this.velocity.scale(dt));
 
         break;
       }

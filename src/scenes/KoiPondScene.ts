@@ -261,9 +261,9 @@ export class KoiPondScene implements Scene {
         cx + Math.cos(angle) * (rx - 20),
         cy + Math.sin(angle) * (ry - 20),
       );
-      // Reverse drift direction inward
-      frog.floatDriftAngle = angle + Math.PI + randomRange(-0.5, 0.5);
-      frog.heading = frog.floatDriftAngle;
+      // Point inward
+      frog.heading = angle + Math.PI + randomRange(-0.5, 0.5);
+      frog.velocity = Vector.zero();
     }
   }
 
@@ -414,7 +414,7 @@ export class KoiPondScene implements Scene {
           } else {
             // Keep floating a while longer
             frog.floatTimer = randomRange(3, 10);
-            frog.floatDriftAngle += randomRange(-1, 1);
+            frog.heading += randomRange(-1, 1);
           }
         }
       }
