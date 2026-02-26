@@ -18,9 +18,9 @@ export function renderFish(ctx: CanvasRenderingContext2D, fish: Fish): void {
 
   ctx.save();
   ctx.translate(fish.position.x, fish.position.y);
-  ctx.rotate(fish.facingAngle); // vertical tilt only (±PI/6)
-  // X-flip: dorsal always stays on top!
+  // X-flip first so rotation tilts correctly for both directions
   ctx.scale(fish.facingRight ? scale : -scale, scale);
+  ctx.rotate(fish.facingAngle);
   ctx.globalAlpha = alpha;
 
   const bodyLen = species.bodyLength;
