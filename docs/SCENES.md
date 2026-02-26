@@ -204,6 +204,68 @@ A single majestic tree in autumn, viewed from a distance. Its canopy is ablaze w
 
 ---
 
+## Cat Cafe
+
+A cozy cat cafe viewed from a seated perspective. Cats of various breeds lounge, play, and wander around a warm interior filled with cushions, cat trees, shelves, and sunbeams. Some cats nap, some groom, some bat at dangling toys, and occasionally one knocks something off a table.
+
+**Mood:** Warm, playful, relaxing. Like spending a lazy afternoon in a cat cafe with a cup of coffee.
+
+**Key behaviors:**
+- Cats nap in curled-up or stretched-out poses, breathing gently visible
+- Cats groom themselves — licking paws, washing faces
+- A cat slowly stalks and then pounces on a dangling toy or another cat's tail
+- Cats stretch and yawn when waking up from a nap
+- A cat hops up onto a shelf or windowsill, surveys the room, then settles
+- Cats rub against furniture legs or each other as they walk past
+- One cat bats an object off a table edge — it falls to the floor
+- Tail flicking and ear swiveling while idle
+- A cat kneads a cushion before lying down
+- Occasional zoomies — one cat sprints across the room for no reason
+
+**Environment elements:**
+- Warm-toned interior — wooden floors, soft lighting, earth tones
+- Cat tree with multiple platforms, scratching posts, and a dangling toy
+- Windowsill with a sunbeam that shifts slowly, cats migrate to follow it
+- Cushions and cat beds scattered around the floor
+- A low table with a coffee cup (that one cat keeps eyeing)
+- Wall-mounted shelves at different heights for cats to perch on
+- A small bookshelf or plant shelf for visual depth
+- Optional: a human hand occasionally reaching in to pet a nearby cat
+
+**Cat types:**
+| Type | Build | Colors | Personality |
+|------|-------|--------|-------------|
+| Orange tabby | Stocky, round | Orange with darker stripes | Lazy, always napping in the sunbeam |
+| Tuxedo | Medium, sleek | Black and white | Curious, the one who knocks things off tables |
+| Calico | Small, compact | Patches of orange, black, white | Social, rubs against everything |
+| Grey longhair | Fluffy, large | Solid grey, bushy tail | Regal, prefers high shelves |
+| Siamese | Slender, angular | Cream with dark points | Playful, initiates zoomies |
+
+**Rendering notes:**
+- Cats rendered as simple but expressive shapes — oval body, round head, triangular ears, long tail
+- Tail animation is key to personality — slow sway (relaxed), quick flick (alert), puffed (startled)
+- Sleeping cats: gentle rhythmic body expansion (breathing)
+- Eyes: slow blinks for contentment, wide for alert/hunting, half-closed for sleepy
+- Depth layering: cats on floor vs. on shelves vs. on cat tree at different z-levels
+- Sunbeam rendered as a soft warm gradient that shifts position over time
+- Furniture provides natural obstacles for pathfinding
+
+**Cat states:**
+| State | Duration | Transitions to |
+|-------|----------|----------------|
+| Sleeping | 30s–2min | Waking (stretch + yawn) |
+| Lounging | 15s–1min | Sleeping, Walking, Grooming |
+| Grooming | 10–30s | Lounging, Walking |
+| Walking | 5–20s | Lounging, Jumping, Stalking |
+| Jumping | 1–3s | Lounging (on new surface) |
+| Stalking | 5–15s | Pouncing |
+| Pouncing | 1–2s | Walking, Lounging |
+| Zoomies | 3–8s | Walking (stops abruptly, looks around) |
+| Kneading | 5–15s | Sleeping |
+| Knocking | 2–5s | Walking (saunters away indifferently) |
+
+---
+
 ## Future Scene Ideas (Not Planned)
 
 These are brainstorm-level ideas, not committed:
