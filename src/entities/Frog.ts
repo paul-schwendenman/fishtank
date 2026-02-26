@@ -1,7 +1,7 @@
 import { Vector } from '../utils/Vector';
 import { randomRange, lerpAngle } from '../utils/math';
 
-export type FrogState = 'sitting' | 'leaping' | 'swimming';
+export type FrogState = 'sitting' | 'leaping' | 'swimming' | 'floating';
 
 export class Frog {
   position: Vector;
@@ -11,6 +11,8 @@ export class Frog {
   // Sitting
   sittingTimer: number;
   sittingPadIndex: number = -1;
+  padOffset: Vector = Vector.zero(); // offset from pad center
+  isOnBank: boolean = false;
   throatPuffPhase: number = 0;
   isThroatPuffing: boolean = false;
   throatPuffTimer: number = 0;
@@ -25,6 +27,14 @@ export class Frog {
   // Swimming
   swimTarget: Vector = Vector.zero();
   velocity: Vector = Vector.zero();
+
+  // Floating
+  floatDriftAngle: number = 0;
+  floatDriftSpeed: number = 0;
+  floatTimer: number = 0; // how long to float before deciding next action
+  kickTimer: number = 0;
+  kickPhase: number = 0;
+  isKicking: boolean = false;
 
   bodyLength: number = 14;
 
@@ -52,6 +62,7 @@ export class Frog {
     this.leapDuration = randomRange(0.4, 0.6);
     this.leapHeight = 30 + Math.random() * 20;
     this.sittingPadIndex = targetPadIndex;
+    this.isOnBank = false;
 
     const dir = target.sub(this.position);
     if (dir.mag() > 0) {
@@ -63,10 +74,31 @@ export class Frog {
     this.state = 'swimming';
     this.swimTarget = target;
     this.sittingPadIndex = targetPadIndex;
+    this.isOnBank = false;
     const dir = target.sub(this.position);
     if (dir.mag() > 0) {
       this.heading = dir.heading();
     }
+  }
+
+  startFloating(): void {
+    this.state = 'floating';
+    this.sittingPadIndex = -1;
+    this.isOnBank = false;
+    this.floatDriftAngle = this.heading + randomRange(-0.5, 0.5);
+    this.floatDriftSpeed = randomRange(2, 6);
+    this.floatTimer = randomRange(4, 15);
+    this.kickTimer = randomRange(1.5, 4);
+    this.isKicking = false;
+    this.kickPhase = 0;
+  }
+
+  /** Generate a random offset within a lily pad radius */
+  static randomPadOffset(padRadius: number): Vector {
+    const angle = randomRange(0, Math.PI * 2);
+    // stay within ~60% of pad radius so frog doesn't hang over the edge
+    const dist = randomRange(0, padRadius * 0.4);
+    return Vector.fromAngle(angle).scale(dist);
   }
 
   update(dt: number): void {
@@ -114,6 +146,42 @@ export class Frog {
           this.velocity = dir.scale(40);
           this.position = this.position.add(this.velocity.scale(dt));
         }
+        break;
+      }
+
+      case 'floating': {
+        this.floatTimer -= dt;
+
+        // Gentle drift
+        const drift = Vector.fromAngle(this.floatDriftAngle).scale(this.floatDriftSpeed * dt);
+        this.position = this.position.add(drift);
+
+        // Slow drift direction wander
+        this.floatDriftAngle += randomRange(-0.3, 0.3) * dt;
+
+        // Occasional kicks that add a small burst of movement
+        this.kickTimer -= dt;
+        if (this.isKicking) {
+          this.kickPhase += dt * 6;
+          if (this.kickPhase > Math.PI) {
+            this.isKicking = false;
+            this.kickTimer = randomRange(2, 5);
+          } else {
+            // Kick propels frog slightly in heading direction
+            const kickForce = Math.sin(this.kickPhase) * 20 * dt;
+            this.position = this.position.add(Vector.fromAngle(this.heading).scale(kickForce));
+          }
+        } else if (this.kickTimer <= 0) {
+          this.isKicking = true;
+          this.kickPhase = 0;
+          // Slight heading adjustment with each kick
+          this.heading += randomRange(-0.4, 0.4);
+          this.floatDriftAngle = this.heading + randomRange(-0.3, 0.3);
+        }
+
+        // Slow heading drift toward drift angle
+        this.heading = lerpAngle(this.heading, this.floatDriftAngle, 0.02);
+
         break;
       }
     }

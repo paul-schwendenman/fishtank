@@ -16,8 +16,21 @@ export function renderFrog(ctx: CanvasRenderingContext2D, frog: Frog): void {
   const len = frog.bodyLength;
   const bodyW = len * 0.45;
 
-  // --- Shadow (only when not leaping high) ---
-  if (frog.state !== 'leaping') {
+  // --- Water ring for floating frogs ---
+  if (frog.state === 'floating') {
+    ctx.save();
+    ctx.rotate(-frog.heading); // undo rotation for circular ring
+    ctx.globalAlpha = 0.15;
+    ctx.strokeStyle = 'rgba(180, 220, 160, 0.8)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, len * 0.55, len * 0.4, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // --- Shadow (only when not leaping or floating) ---
+  if (frog.state !== 'leaping' && frog.state !== 'floating') {
     ctx.globalAlpha = 0.2;
     ctx.beginPath();
     ctx.ellipse(1, 2, len * 0.4, bodyW * 0.7, 0, 0, Math.PI * 2);
@@ -53,8 +66,33 @@ export function renderFrog(ctx: CanvasRenderingContext2D, frog: Frog): void {
     ctx.moveTo(len * 0.2, bodyW * 0.5);
     ctx.lineTo(len * 0.5, bodyW * 0.9);
     ctx.stroke();
+  } else if (frog.state === 'floating' || frog.state === 'swimming') {
+    // Floating/swimming: legs trailing behind, splayed out
+    const kickOffset = frog.isKicking ? Math.sin(frog.kickPhase) * 0.3 : 0;
+
+    // Back legs — splayed and trailing
+    ctx.beginPath();
+    ctx.moveTo(-len * 0.2, -bodyW * 0.5);
+    ctx.lineTo(-len * 0.5, -bodyW * (1.0 + kickOffset));
+    ctx.lineTo(-len * 0.7 - kickOffset * len * 0.2, -bodyW * (0.6 + kickOffset * 0.5));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-len * 0.2, bodyW * 0.5);
+    ctx.lineTo(-len * 0.5, bodyW * (1.0 + kickOffset));
+    ctx.lineTo(-len * 0.7 - kickOffset * len * 0.2, bodyW * (0.6 + kickOffset * 0.5));
+    ctx.stroke();
+
+    // Front legs — slightly forward and out
+    ctx.beginPath();
+    ctx.moveTo(len * 0.15, -bodyW * 0.4);
+    ctx.lineTo(len * 0.1, -bodyW * 0.8);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(len * 0.15, bodyW * 0.4);
+    ctx.lineTo(len * 0.1, bodyW * 0.8);
+    ctx.stroke();
   } else {
-    // Tucked legs when sitting/swimming
+    // Tucked legs when sitting
     // Back legs (tucked Z shape)
     ctx.beginPath();
     ctx.moveTo(-len * 0.2, -bodyW * 0.5);

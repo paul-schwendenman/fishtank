@@ -91,8 +91,10 @@ export class KoiPondScene implements Scene {
     const pads = this.environment.lilyPads;
     for (let i = 0; i < FROG_COUNT && i < pads.length; i++) {
       const pad = pads[i]!;
-      const frog = new Frog(new Vector(pad.x, pad.y));
+      const offset = Frog.randomPadOffset(pad.radius);
+      const frog = new Frog(new Vector(pad.x + offset.x, pad.y + offset.y));
       frog.sittingPadIndex = i;
+      frog.padOffset = offset;
       pad.occupied = true;
       this.frogs.push(frog);
     }
@@ -237,14 +239,43 @@ export class KoiPondScene implements Scene {
     this.environment.updateDebris(dt);
   }
 
+  /** Get a point on the pond bank at the given angle */
+  private bankPoint(angle: number): Vector {
+    const { cx, cy, rx, ry } = this.bounds;
+    // Slightly inside the edge so frogs sit on the visible bank
+    return new Vector(
+      cx + Math.cos(angle) * (rx - 5),
+      cy + Math.sin(angle) * (ry - 5),
+    );
+  }
+
+  /** Keep a floating frog inside the pond bounds */
+  private constrainToPond(frog: Frog): void {
+    const { cx, cy, rx, ry } = this.bounds;
+    const ndx = (frog.position.x - cx) / (rx - 15);
+    const ndy = (frog.position.y - cy) / (ry - 15);
+    if (ndx * ndx + ndy * ndy > 1) {
+      // Push back inward
+      const angle = Math.atan2(frog.position.y - cy, frog.position.x - cx);
+      frog.position = new Vector(
+        cx + Math.cos(angle) * (rx - 20),
+        cy + Math.sin(angle) * (ry - 20),
+      );
+      // Reverse drift direction inward
+      frog.floatDriftAngle = angle + Math.PI + randomRange(-0.5, 0.5);
+      frog.heading = frog.floatDriftAngle;
+    }
+  }
+
   private updateFrogs(dt: number): void {
     const pads = this.environment.lilyPads;
+    const { cx, cy } = this.bounds;
 
     for (const frog of this.frogs) {
       frog.update(dt);
 
+      // --- Sitting timer expired: decide what to do ---
       if (frog.state === 'sitting' && frog.sittingTimer <= 0) {
-        // Find an unoccupied pad to leap to
         const freePads: number[] = [];
         for (let i = 0; i < pads.length; i++) {
           if (!pads[i]!.occupied && i !== frog.sittingPadIndex) {
@@ -252,40 +283,76 @@ export class KoiPondScene implements Scene {
           }
         }
 
-        if (freePads.length > 0) {
-          const targetIdx = freePads[Math.floor(Math.random() * freePads.length)]!;
-          const targetPad = pads[targetIdx]!;
+        // Release current pad
+        if (frog.sittingPadIndex >= 0 && frog.sittingPadIndex < pads.length) {
+          pads[frog.sittingPadIndex]!.occupied = false;
+        }
 
-          // Release current pad
-          if (frog.sittingPadIndex >= 0 && frog.sittingPadIndex < pads.length) {
-            pads[frog.sittingPadIndex]!.occupied = false;
-          }
+        // Leap ripple (from any surface — pad, bank, or water)
+        if (this.ripples.length < MAX_RIPPLES) {
+          this.ripples.push(new Ripple(frog.position.x, frog.position.y, 40, 2, 0.5));
+          this.ripples.push(new Ripple(frog.position.x, frog.position.y, 30, 1.5, 0.4));
+        }
 
-          // Leap ripple
-          if (this.ripples.length < MAX_RIPPLES) {
-            this.ripples.push(new Ripple(frog.position.x, frog.position.y, 40, 2, 0.5));
-            this.ripples.push(new Ripple(frog.position.x, frog.position.y, 30, 1.5, 0.4));
-          }
+        const roll = Math.random();
 
-          const dist = frog.position.dist(new Vector(targetPad.x, targetPad.y));
-          if (dist < 200) {
-            // Direct leap
-            frog.startLeap(new Vector(targetPad.x, targetPad.y), targetIdx);
-            targetPad.occupied = true;
+        if (roll < 0.25) {
+          // Jump into water and float
+          const midAngle = randomRange(0, Math.PI * 2);
+          const midDist = randomRange(30, 70);
+          const mid = frog.position.add(Vector.fromAngle(midAngle).scale(midDist));
+          frog.startLeap(mid, -1);
+          // Mark that this leap should transition to floating (handled on landing)
+        } else if (roll < 0.40 && !frog.isOnBank) {
+          // Swim/leap toward bank
+          const toBankAngle = Math.atan2(frog.position.y - cy, frog.position.x - cx);
+          // Aim for roughly the same direction but with some variety
+          const bankAngle = toBankAngle + randomRange(-0.5, 0.5);
+          const bankTarget = this.bankPoint(bankAngle);
+          const dist = frog.position.dist(bankTarget);
+
+          if (dist < 120) {
+            // Close enough to leap directly to bank
+            frog.startLeap(bankTarget, -2); // -2 signals bank landing
           } else {
-            // Leap to water, then swim
-            const midAngle = randomRange(0, Math.PI * 2);
+            // Leap into water toward bank, will swim rest
+            const midAngle = Math.atan2(bankTarget.y - frog.position.y, bankTarget.x - frog.position.x);
             const midDist = randomRange(40, 80);
             const mid = frog.position.add(Vector.fromAngle(midAngle).scale(midDist));
             frog.startLeap(mid, -1);
           }
+        } else if (freePads.length > 0) {
+          // Jump to another lily pad
+          const targetIdx = freePads[Math.floor(Math.random() * freePads.length)]!;
+          const targetPad = pads[targetIdx]!;
+          const offset = Frog.randomPadOffset(targetPad.radius);
+          const targetPos = new Vector(targetPad.x + offset.x, targetPad.y + offset.y);
+
+          const dist = frog.position.dist(targetPos);
+          if (dist < 200) {
+            frog.startLeap(targetPos, targetIdx);
+            frog.padOffset = offset;
+            targetPad.occupied = true;
+          } else {
+            // Too far for direct leap — jump into water first
+            const midAngle = Math.atan2(targetPad.y - frog.position.y, targetPad.x - frog.position.x);
+            const midDist = randomRange(40, 80);
+            const mid = frog.position.add(Vector.fromAngle(midAngle).scale(midDist));
+            frog.startLeap(mid, -1);
+          }
+        } else if (!frog.isOnBank) {
+          // No free pads — jump into water and float
+          const midAngle = randomRange(0, Math.PI * 2);
+          const midDist = randomRange(30, 60);
+          const mid = frog.position.add(Vector.fromAngle(midAngle).scale(midDist));
+          frog.startLeap(mid, -1);
         } else {
-          // No free pads, reset timer
-          frog.sittingTimer = randomRange(5, 15);
+          // On bank, no pads free — just wait longer
+          frog.sittingTimer = randomRange(8, 20);
         }
       }
 
-      // Handle leap completion
+      // --- Handle leap completion ---
       if (frog.state === 'leaping' && frog.leapProgress >= 1) {
         // Landing ripple
         if (this.ripples.length < MAX_RIPPLES) {
@@ -293,41 +360,70 @@ export class KoiPondScene implements Scene {
           this.ripples.push(new Ripple(frog.position.x, frog.position.y, 25, 1.5, 0.3));
         }
 
-        if (frog.sittingPadIndex >= 0 && frog.sittingPadIndex < pads.length) {
-          // Landed on pad
-          const pad = pads[frog.sittingPadIndex]!;
-          frog.position = new Vector(pad.x, pad.y);
+        if (frog.sittingPadIndex === -2) {
+          // Landed on bank
+          frog.state = 'sitting';
+          frog.isOnBank = true;
+          frog.sittingPadIndex = -1;
+          frog.sittingTimer = randomRange(10, 30);
+        } else if (frog.sittingPadIndex >= 0 && frog.sittingPadIndex < pads.length) {
+          // Landed on pad (with offset already set in leapEnd)
           frog.state = 'sitting';
           frog.sittingTimer = randomRange(5, 20);
         } else {
-          // Landed in water — swim to nearest free pad
-          let nearestIdx = -1;
-          let nearestDist = Infinity;
+          // Landed in water — float!
+          frog.startFloating();
+        }
+      }
+
+      // --- Handle floating decisions ---
+      if (frog.state === 'floating') {
+        this.constrainToPond(frog);
+
+        // Occasional small ripples from kicks
+        if (frog.isKicking && frog.kickPhase < 0.3 && this.ripples.length < MAX_RIPPLES) {
+          this.ripples.push(new Ripple(frog.position.x, frog.position.y, 15, 1.5, 0.2));
+        }
+
+        if (frog.floatTimer <= 0) {
+          // Time to decide: swim to pad, swim to bank, or keep floating
+          const freePads: number[] = [];
           for (let i = 0; i < pads.length; i++) {
             if (!pads[i]!.occupied) {
-              const d = frog.position.dist(new Vector(pads[i]!.x, pads[i]!.y));
-              if (d < nearestDist) {
-                nearestDist = d;
-                nearestIdx = i;
-              }
+              freePads.push(i);
             }
           }
-          if (nearestIdx >= 0) {
-            const pad = pads[nearestIdx]!;
-            pad.occupied = true;
-            frog.startSwimming(new Vector(pad.x, pad.y), nearestIdx);
+
+          const decision = Math.random();
+
+          if (decision < 0.5 && freePads.length > 0) {
+            // Swim to a pad
+            const targetIdx = freePads[Math.floor(Math.random() * freePads.length)]!;
+            const targetPad = pads[targetIdx]!;
+            const offset = Frog.randomPadOffset(targetPad.radius);
+            targetPad.occupied = true;
+            frog.padOffset = offset;
+            frog.startSwimming(new Vector(targetPad.x + offset.x, targetPad.y + offset.y), targetIdx);
+          } else if (decision < 0.75) {
+            // Swim to bank
+            const toBankAngle = Math.atan2(frog.position.y - cy, frog.position.x - cx);
+            const bankAngle = toBankAngle + randomRange(-0.8, 0.8);
+            const bankTarget = this.bankPoint(bankAngle);
+            frog.startSwimming(bankTarget, -1);
+            frog.isOnBank = true; // set after startSwimming (which resets it)
           } else {
-            // No free pad, just sit in water
-            frog.state = 'sitting';
-            frog.sittingTimer = randomRange(3, 8);
+            // Keep floating a while longer
+            frog.floatTimer = randomRange(3, 10);
+            frog.floatDriftAngle += randomRange(-1, 1);
           }
         }
       }
 
-      // Handle swim arrival
+      // --- Handle swim arrival ---
       if (frog.state === 'sitting' && frog.sittingPadIndex >= 0 && frog.sittingPadIndex < pads.length) {
+        // Keep frog at its pad position + offset (not snapping every frame, just maintaining)
         const pad = pads[frog.sittingPadIndex]!;
-        frog.position = new Vector(pad.x, pad.y);
+        frog.position = new Vector(pad.x + frog.padOffset.x, pad.y + frog.padOffset.y);
       }
     }
   }
