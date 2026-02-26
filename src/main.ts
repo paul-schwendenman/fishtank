@@ -1,27 +1,49 @@
-import { GameLoop, type Scene } from './engine/GameLoop';
+import { GameLoop } from './engine/GameLoop';
 import { FishTankScene } from './scenes/FishTankScene';
 import { KoiPondScene } from './scenes/KoiPondScene';
+import { SettingsUI, type SceneEntry } from './ui/SettingsUI';
 
 const canvas = document.getElementById('tank') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d')!;
 
-function createScene(w: number, h: number): Scene {
-  const hash = window.location.hash.toLowerCase();
-  if (hash === '#koi-pond') {
-    return new KoiPondScene(w, h);
-  }
-  return new FishTankScene(w, h);
+const scenes: SceneEntry[] = [
+  {
+    id: 'fish-tank',
+    name: 'Fish Tank',
+    description: 'Tropical aquarium',
+    icon: '\u{1F420}',
+    create: (w, h) => new FishTankScene(w, h),
+  },
+  {
+    id: 'koi-pond',
+    name: 'Koi Pond',
+    description: 'Zen garden pond',
+    icon: '\u{1F3E3}',
+    create: (w, h) => new KoiPondScene(w, h),
+  },
+];
+
+function getInitialScene(): SceneEntry {
+  const hash = window.location.hash.toLowerCase().replace('#', '');
+  return scenes.find((s) => s.id === hash) ?? scenes[0]!;
 }
 
-let scene = createScene(window.innerWidth, window.innerHeight);
+const initial = getInitialScene();
+let scene = initial.create(window.innerWidth, window.innerHeight);
+
+const loop = new GameLoop(scene, ctx);
+
+new SettingsUI(scenes, initial.id, (entry) => {
+  window.location.hash = entry.id;
+  scene = entry.create(canvas.width, canvas.height);
+  loop.setScene(scene);
+});
 
 function resize(): void {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   scene.resize(canvas.width, canvas.height);
 }
-
-const loop = new GameLoop(scene, ctx);
 
 window.addEventListener('resize', resize);
 resize();

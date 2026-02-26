@@ -14,6 +14,10 @@ export class GameLoop {
     private ctx: CanvasRenderingContext2D,
   ) {}
 
+  setScene(scene: Scene): void {
+    this.scene = scene;
+  }
+
   start(): void {
     this.running = true;
     this.lastTime = performance.now();
