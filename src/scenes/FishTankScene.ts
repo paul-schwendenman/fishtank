@@ -312,31 +312,16 @@ export class FishTankScene implements Scene {
     // 3. Substrate (back layer — always behind fish)
     this.environment.renderSubstrate(ctx, this.width, this.height);
 
-    // 4. Back plants
-    this.environment.renderPlants(ctx, this.time, 'back');
-
-    // Sort fish by depth (back first)
-    const sorted = [...this.fish].sort((a, b) => b.depth - a.depth);
-
-    // 5. Back fish (depth > 0.5)
-    for (const fish of sorted) {
-      if (fish.depth > 0.5) {
-        renderFish(ctx, fish);
-      }
+    // 4. Depth-sorted entities (fish + plants + decorations)
+    const depthItems = this.environment.getDepthRenderables(ctx, this.time);
+    for (const fish of this.fish) {
+      const f = fish;
+      depthItems.push({ depth: f.depth, render: () => renderFish(ctx, f) });
     }
-
-    // 6. Decorations
-    this.environment.renderDecorations(ctx);
-
-    // 7. Front fish (depth <= 0.5)
-    for (const fish of sorted) {
-      if (fish.depth <= 0.5) {
-        renderFish(ctx, fish);
-      }
+    depthItems.sort((a, b) => b.depth - a.depth);
+    for (const item of depthItems) {
+      item.render();
     }
-
-    // 8. Front plants
-    this.environment.renderPlants(ctx, this.time, 'front');
 
     // 9. Bubbles
     for (const bubble of this.bubbles) {

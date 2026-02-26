@@ -10,7 +10,7 @@ interface Plant {
   amplitude: number;
   period: number;
   width: number;
-  layer: 'back' | 'front';
+  depth: number;
 }
 
 interface Rock {
@@ -20,6 +20,7 @@ interface Rock {
   height: number;
   color: string;
   points: { dx: number; dy: number }[];
+  depth: number;
 }
 
 interface LightRay {
@@ -62,27 +63,27 @@ export class EnvironmentRenderer {
     // Generate plants
     this.plants = [];
     const plantPositions = [
-      { x: 0.02, layer: 'back' as const },
-      { x: 0.08, layer: 'front' as const },
-      { x: 0.14, layer: 'back' as const },
-      { x: 0.22, layer: 'front' as const },
-      { x: 0.30, layer: 'back' as const },
-      { x: 0.38, layer: 'front' as const },
-      { x: 0.48, layer: 'back' as const },
-      { x: 0.55, layer: 'front' as const },
-      { x: 0.65, layer: 'back' as const },
-      { x: 0.72, layer: 'front' as const },
-      { x: 0.80, layer: 'back' as const },
-      { x: 0.88, layer: 'front' as const },
-      { x: 0.94, layer: 'back' as const },
+      { x: 0.02, back: true },
+      { x: 0.08, back: false },
+      { x: 0.14, back: true },
+      { x: 0.22, back: false },
+      { x: 0.30, back: true },
+      { x: 0.38, back: false },
+      { x: 0.48, back: true },
+      { x: 0.55, back: false },
+      { x: 0.65, back: true },
+      { x: 0.72, back: false },
+      { x: 0.80, back: true },
+      { x: 0.88, back: false },
+      { x: 0.94, back: true },
     ];
     const greens = ['#1a5c2a', '#2d7a3e', '#1e6830', '#3a8c4f', '#245c32', '#4a9c5c'];
     plantPositions.forEach((pos) => {
-      const isBack = pos.layer === 'back';
+      const depth = pos.back ? 0.6 + Math.random() * 0.2 : 0.1 + Math.random() * 0.2;
       const x = left + width * (pos.x + (Math.random() - 0.5) * 0.03);
       const height = 120 + Math.random() * 160;
       const segments = 6 + Math.floor(Math.random() * 5);
-      const color = isBack
+      const color = pos.back
         ? '#1a4c2a'  // muted for back
         : greens[Math.floor(Math.random() * greens.length)]!;
 
@@ -96,7 +97,7 @@ export class EnvironmentRenderer {
         amplitude: 6 + Math.random() * 12,
         period: 3 + Math.random() * 3,
         width: 4 + Math.random() * 5,
-        layer: pos.layer,
+        depth,
       });
     });
 
@@ -121,6 +122,7 @@ export class EnvironmentRenderer {
         height: h,
         color: `rgb(${80 + Math.random() * 40}, ${70 + Math.random() * 30}, ${60 + Math.random() * 20})`,
         points,
+        depth: 0.35 + Math.random() * 0.2,
       });
     });
 
@@ -143,6 +145,7 @@ export class EnvironmentRenderer {
         { dx: -0.4, dy: -0.3 },
         { dx: -0.5, dy: 0.4 },
       ],
+      depth: 0.4 + Math.random() * 0.1,
     });
 
     // Light rays
@@ -178,12 +181,38 @@ export class EnvironmentRenderer {
     return this.rocks.map(r => ({ x: r.x, y: r.y, width: r.width, height: r.height }));
   }
 
-  get plantData(): Array<{ x: number; baseY: number; height: number; layer: 'back' | 'front' }> {
-    return this.plants.map(p => ({ x: p.x, baseY: p.baseY, height: p.height, layer: p.layer }));
+  get plantData(): Array<{ x: number; baseY: number; height: number; depth: number }> {
+    return this.plants.map(p => ({ x: p.x, baseY: p.baseY, height: p.height, depth: p.depth }));
   }
 
   get aeratorPosition(): { x: number; y: number } {
     return { x: this.aeratorX, y: this.bounds.bottom };
+  }
+
+  getDepthRenderables(ctx: CanvasRenderingContext2D, time: number): Array<{ depth: number; render: () => void }> {
+    const items: Array<{ depth: number; render: () => void }> = [];
+
+    for (const plant of this.plants) {
+      items.push({
+        depth: plant.depth,
+        render: () => this.renderPlant(ctx, time, plant),
+      });
+    }
+
+    for (const rock of this.rocks) {
+      items.push({
+        depth: rock.depth,
+        render: () => this.renderRock(ctx, rock),
+      });
+    }
+
+    // Aerator stone
+    items.push({
+      depth: 0.45,
+      render: () => this.renderAerator(ctx),
+    });
+
+    return items;
   }
 
   renderBackground(ctx: CanvasRenderingContext2D, canvasW: number, canvasH: number): void {
@@ -248,81 +277,73 @@ export class EnvironmentRenderer {
     }
   }
 
-  renderPlants(ctx: CanvasRenderingContext2D, time: number, layer: 'back' | 'front'): void {
-    for (const plant of this.plants) {
-      if (plant.layer !== layer) continue;
+  private renderPlant(ctx: CanvasRenderingContext2D, time: number, plant: Plant): void {
+    ctx.save();
+    // Deeper plants are more transparent
+    ctx.globalAlpha = 0.9 - plant.depth * 0.4;
 
-      ctx.save();
-      if (layer === 'back') {
-        ctx.globalAlpha = 0.6;
-      } else {
-        ctx.globalAlpha = 0.85;
+    const segmentH = plant.height / plant.segments;
+    ctx.strokeStyle = plant.color;
+    ctx.lineCap = 'round';
+
+    for (let blade = 0; blade < 3; blade++) {
+      const bladeOffset = (blade - 1) * plant.width * 1.5;
+      const bladePhase = plant.phase + blade * 0.8;
+
+      ctx.lineWidth = plant.width * (1 - blade * 0.15);
+      ctx.beginPath();
+      ctx.moveTo(plant.x + bladeOffset, plant.baseY);
+
+      let cx = plant.x + bladeOffset;
+      let cy = plant.baseY;
+
+      for (let s = 1; s <= plant.segments; s++) {
+        const t = s / plant.segments;
+        const sway = Math.sin(time / plant.period + bladePhase + s * 0.3) * plant.amplitude * t;
+        cx = plant.x + bladeOffset + sway;
+        cy = plant.baseY - s * segmentH;
+        ctx.lineTo(cx, cy);
       }
+      ctx.stroke();
 
-      const segmentH = plant.height / plant.segments;
-      ctx.strokeStyle = plant.color;
-      ctx.lineCap = 'round';
-
-      for (let blade = 0; blade < 3; blade++) {
-        const bladeOffset = (blade - 1) * plant.width * 1.5;
-        const bladePhase = plant.phase + blade * 0.8;
-
-        ctx.lineWidth = plant.width * (1 - blade * 0.15);
+      // Leaf tips
+      if (plant.height > 100) {
         ctx.beginPath();
-        ctx.moveTo(plant.x + bladeOffset, plant.baseY);
-
-        let cx = plant.x + bladeOffset;
-        let cy = plant.baseY;
-
-        for (let s = 1; s <= plant.segments; s++) {
-          const t = s / plant.segments;
-          const sway = Math.sin(time / plant.period + bladePhase + s * 0.3) * plant.amplitude * t;
-          cx = plant.x + bladeOffset + sway;
-          cy = plant.baseY - s * segmentH;
-          ctx.lineTo(cx, cy);
-        }
-        ctx.stroke();
-
-        // Leaf tips
-        if (plant.height > 100) {
-          ctx.beginPath();
-          ctx.ellipse(cx, cy, plant.width * 0.8, 3, 0.3, 0, Math.PI * 2);
-          ctx.fillStyle = plant.color;
-          ctx.fill();
-        }
+        ctx.ellipse(cx, cy, plant.width * 0.8, 3, 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = plant.color;
+        ctx.fill();
       }
-
-      ctx.restore();
     }
+
+    ctx.restore();
   }
 
-  renderDecorations(ctx: CanvasRenderingContext2D): void {
-    for (const rock of this.rocks) {
-      ctx.beginPath();
-      const first = rock.points[0]!;
-      ctx.moveTo(
-        rock.x + first.dx * rock.width * 0.5,
-        rock.y + first.dy * rock.height * 0.5,
+  private renderRock(ctx: CanvasRenderingContext2D, rock: Rock): void {
+    ctx.beginPath();
+    const first = rock.points[0]!;
+    ctx.moveTo(
+      rock.x + first.dx * rock.width * 0.5,
+      rock.y + first.dy * rock.height * 0.5,
+    );
+    for (let i = 1; i < rock.points.length; i++) {
+      const p = rock.points[i]!;
+      ctx.lineTo(
+        rock.x + p.dx * rock.width * 0.5,
+        rock.y + p.dy * rock.height * 0.5,
       );
-      for (let i = 1; i < rock.points.length; i++) {
-        const p = rock.points[i]!;
-        ctx.lineTo(
-          rock.x + p.dx * rock.width * 0.5,
-          rock.y + p.dy * rock.height * 0.5,
-        );
-      }
-      ctx.closePath();
-      ctx.fillStyle = rock.color;
-      ctx.fill();
-
-      // Subtle highlight
-      ctx.beginPath();
-      ctx.ellipse(rock.x - rock.width * 0.1, rock.y - rock.height * 0.2, rock.width * 0.15, rock.height * 0.1, -0.3, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,0.08)';
-      ctx.fill();
     }
+    ctx.closePath();
+    ctx.fillStyle = rock.color;
+    ctx.fill();
 
-    // Aerator stone
+    // Subtle highlight
+    ctx.beginPath();
+    ctx.ellipse(rock.x - rock.width * 0.1, rock.y - rock.height * 0.2, rock.width * 0.15, rock.height * 0.1, -0.3, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fill();
+  }
+
+  private renderAerator(ctx: CanvasRenderingContext2D): void {
     const aer = this.aeratorPosition;
     ctx.beginPath();
     ctx.ellipse(aer.x, aer.y - 3, 12, 5, 0, 0, Math.PI * 2);
