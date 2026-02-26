@@ -39,7 +39,7 @@ export class FireflyFieldScene implements Scene {
   constructor(width: number, height: number) {
     this.width = width;
     this.height = height;
-    this.grassLineY = height * 0.82;
+    this.grassLineY = height * 0.95;
     this.environment = new FireflyFieldRenderer(width, height);
     this.owl = new Owl(width, height);
     for (let i = 0; i < 3; i++) {
@@ -99,7 +99,7 @@ export class FireflyFieldScene implements Scene {
   resize(width: number, height: number): void {
     this.width = width;
     this.height = height;
-    this.grassLineY = height * 0.82;
+    this.grassLineY = height * 0.95;
     this.environment.resize(width, height);
     this.owl.resize(width, height);
     for (const bat of this.bats) {
@@ -171,7 +171,7 @@ export class FireflyFieldScene implements Scene {
     this.environment.renderStars(ctx, this.time);
 
     // 3. Moon + glow
-    this.environment.renderMoon(ctx, this.width, this.height);
+    this.environment.renderMoon(ctx);
 
     // 4. Distant treeline/hills
     this.environment.renderTreeline(ctx, this.width, this.height);

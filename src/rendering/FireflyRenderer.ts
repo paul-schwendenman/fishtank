@@ -80,49 +80,57 @@ export function renderOwl(
   ctx.translate(owl.x, owl.y);
   ctx.scale(owl.scale * owl.direction, owl.scale);
 
-  const wingAngle = Math.sin(owl.wingPhase) * 0.3;
+  // wingAngle: ~0.05 = flat (glide), positive = upstroke, negative = downstroke
+  const wa = owl.wingAngle;
+
+  // Wing tip Y: glide ~flat (-6), upstroke high (-30), downstroke well below body (+18)
+  const wingTipY = -6 - wa * 65;
 
   ctx.fillStyle = '#0a0a14';
 
-  // Body — ellipse
+  // Tail — small fan behind the body
   ctx.beginPath();
-  ctx.ellipse(0, 0, 14, 10, 0, 0, Math.PI * 2);
+  ctx.moveTo(-14, -2);
+  ctx.lineTo(-22, -5);
+  ctx.lineTo(-22, 5);
+  ctx.lineTo(-14, 2);
+  ctx.closePath();
   ctx.fill();
 
-  // Head
+  // Wing (side profile — broad, rounded owl wing)
+  // Drawn before body so body overlaps the attachment point
   ctx.beginPath();
-  ctx.arc(12, -6, 7, 0, Math.PI * 2);
+  ctx.moveTo(6, -5);                // shoulder (front attachment)
+  // Leading edge: broad curve up to the rounded tip
+  ctx.bezierCurveTo(4, wingTipY + 2, -2, wingTipY - 3, -8, wingTipY);
+  // Rounded wing tip
+  ctx.bezierCurveTo(-12, wingTipY + 1, -14, wingTipY + 4, -14, wingTipY + 6);
+  // Trailing edge: broad curve back to body
+  ctx.bezierCurveTo(-13, wingTipY + 12, -10, -1, -12, -1);
+  ctx.closePath();
+  ctx.fill();
+
+  // Body — horizontal ellipse
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 16, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Head — forward and slightly up
+  ctx.beginPath();
+  ctx.arc(15, -4, 7, 0, Math.PI * 2);
   ctx.fill();
 
   // Ear tufts
   ctx.beginPath();
-  ctx.moveTo(9, -12);
-  ctx.lineTo(11, -18);
-  ctx.lineTo(13, -12);
+  ctx.moveTo(13, -10);
+  ctx.lineTo(14, -16);
+  ctx.lineTo(16, -10);
   ctx.fill();
   ctx.beginPath();
-  ctx.moveTo(13, -12);
-  ctx.lineTo(15, -17);
-  ctx.lineTo(17, -11);
+  ctx.moveTo(16, -10);
+  ctx.lineTo(18, -15);
+  ctx.lineTo(19, -9);
   ctx.fill();
-
-  // Left wing
-  ctx.save();
-  ctx.translate(-4, -4);
-  ctx.rotate(-wingAngle);
-  ctx.beginPath();
-  ctx.ellipse(-14, 0, 18, 6, -0.2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  // Right wing
-  ctx.save();
-  ctx.translate(-4, 4);
-  ctx.rotate(wingAngle);
-  ctx.beginPath();
-  ctx.ellipse(-14, 0, 18, 6, 0.2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
 
   ctx.restore();
 }
