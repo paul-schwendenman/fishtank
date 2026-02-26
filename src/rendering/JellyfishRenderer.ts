@@ -23,6 +23,7 @@ export function renderJellyfish(
 
   ctx.save();
   ctx.translate(jelly.position.x, jelly.position.y);
+  ctx.rotate(jelly.heading);
   ctx.scale(scale, scale);
   ctx.globalAlpha = alpha;
 

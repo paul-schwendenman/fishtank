@@ -102,9 +102,11 @@ export class JellyfishTankScene implements Scene {
       const resultForce = composeForceBudget(forces, budget);
       jelly.applyForce(resultForce);
 
-      // Wander + ambient current applied directly (outside budget)
-      jelly.applyForce(jellyfishWander(jelly));
-      jelly.applyForce(current.scale(0.15));
+      // Wander + ambient current only while thrusting — coast cleanly between pulses
+      if (jelly.contracting) {
+        jelly.applyForce(jellyfishWander(jelly));
+        jelly.applyForce(current.scale(0.15));
+      }
 
       jelly.update(dt);
     }

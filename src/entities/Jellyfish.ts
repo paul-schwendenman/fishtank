@@ -13,10 +13,15 @@ export class Jellyfish {
   variety: JellyfishVarietyConfig;
   bellRadius: number;
 
+  // Heading: rotation angle applied to the canvas.
+  // 0 = bell faces up, PI/2 = bell faces right, etc.
+  heading: number;
+  headingDrift: number; // slow random drift rate
+
   // Pulse system
   pulsePhase: number;
   pulseFreq: number;
-  private contracting: boolean = false;
+  contracting: boolean = false;
 
   // Position history for tentacle trailing
   positionHistory: Vector[];
@@ -37,10 +42,13 @@ export class Jellyfish {
 
     this.bellRadius = randomRange(variety.bellRadiusMin, variety.bellRadiusMax);
 
-    const angle = randomRange(-Math.PI, Math.PI);
+    // Random initial heading — each jellyfish faces a different direction
+    this.heading = randomRange(-Math.PI, Math.PI);
+    this.headingDrift = randomRange(-0.15, 0.15);
+
     const speed = randomRange(2, 5);
-    this.velocity = Vector.fromAngle(angle).scale(speed);
-    this.wanderAngle = angle;
+    this.velocity = this.thrustDirection().scale(speed);
+    this.wanderAngle = this.heading;
 
     this.depth = randomRange(0.15, 0.7);
     this.pulsePhase = randomRange(0, Math.PI * 2);
@@ -65,6 +73,13 @@ export class Jellyfish {
     this.maxForce = variety.maxForce;
   }
 
+  /** Direction the bell propels toward (away from tentacles) in world space. */
+  thrustDirection(): Vector {
+    // Local "up" is (0, -1). After rotating by heading:
+    // world = (sin(heading), -cos(heading))
+    return new Vector(Math.sin(this.heading), -Math.cos(this.heading));
+  }
+
   applyForce(force: Vector): void {
     this.acceleration = this.acceleration.add(force);
   }
@@ -81,7 +96,6 @@ export class Jellyfish {
   get pulseAmount(): number {
     // Asymmetric: fast contraction, slow relaxation
     const raw = Math.sin(this.pulsePhase);
-    // Map so positive part is short (contraction) and negative is long (relaxation)
     return clamp(raw * 2, 0, 1);
   }
 
@@ -91,20 +105,25 @@ export class Jellyfish {
       this.spawnOpacity = Math.min(1, this.spawnOpacity + dt * 0.5);
     }
 
-    // Advance pulse
+    // --- Pulse system ---
     this.pulsePhase += this.pulseFreq * Math.PI * 2 * dt;
 
-    // Detect contraction phase (sin crossing from negative to positive)
-    const prevContracting = this.contracting;
     this.contracting = Math.sin(this.pulsePhase) > 0;
 
-    // Apply thrust during contraction onset
-    if (this.contracting && !prevContracting) {
-      // Thrust upward (negative y)
-      this.applyForce(new Vector(0, -this.variety.thrustStrength));
+    // --- Heading turn: only while thrusting, very slight ---
+    if (this.contracting) {
+      this.headingDrift += randomRange(-0.1, 0.1) * dt;
+      this.headingDrift = clamp(this.headingDrift, -0.04, 0.04);
+      this.heading += this.headingDrift * dt;
     }
 
-    // Constant passive sinking
+    // Thrust continuously during contraction phase, ramped by pulse amount
+    if (this.contracting) {
+      const ramp = this.pulseAmount;
+      this.applyForce(this.thrustDirection().scale(this.variety.thrustStrength * ramp));
+    }
+
+    // Gentle passive sinking — just a slow drift, not fighting thrust
     this.applyForce(new Vector(0, this.variety.sinkRate));
 
     // Apply forces
@@ -114,14 +133,16 @@ export class Jellyfish {
     // Speed limit
     this.velocity = this.velocity.limit(this.maxSpeed);
 
-    // Gentle drag (jellyfish are slow and floaty)
-    const dragFactor = Math.pow(0.985, Math.min(dt * 60, 3));
+    // Drag: stronger during coast (relaxed), lighter during thrust (contracting)
+    // This gives a clear accelerate → coast → slow cycle
+    const baseDrag = this.contracting ? 0.992 : 0.975;
+    const dragFactor = Math.pow(baseDrag, Math.min(dt * 60, 3));
     this.velocity = this.velocity.scale(dragFactor);
 
     // Update position
     this.position = this.position.add(this.velocity.scale(dt));
 
-    // Update position history (ring buffer style, shift and push)
+    // Update position history
     this.positionHistory.shift();
     this.positionHistory.push(this.position);
 
