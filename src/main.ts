@@ -1,6 +1,7 @@
 import { GameLoop } from './engine/GameLoop';
 import { FishTankScene } from './scenes/FishTankScene';
 import { KoiPondScene } from './scenes/KoiPondScene';
+import { JellyfishTankScene } from './scenes/JellyfishTankScene';
 import { SettingsUI, type SceneEntry } from './ui/SettingsUI';
 
 const canvas = document.getElementById('tank') as HTMLCanvasElement;
@@ -20,6 +21,13 @@ const scenes: SceneEntry[] = [
     description: 'Zen garden pond',
     icon: '\u{1F3E3}',
     create: (w, h) => new KoiPondScene(w, h),
+  },
+  {
+    id: 'jellyfish-tank',
+    name: 'Jellyfish Tank',
+    description: 'Deep sea exhibit',
+    icon: '\u{1FABC}',
+    create: (w, h) => new JellyfishTankScene(w, h),
   },
 ];
 
