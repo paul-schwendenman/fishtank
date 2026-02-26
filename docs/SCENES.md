@@ -100,6 +100,58 @@ A cross-section view of an underground ant colony. Tunnels branch through layere
 
 ---
 
+## Koi Pond (Top-Down)
+
+A tranquil koi pond viewed from directly above. Large, colorful koi glide through dark water, their shapes rippling beneath the surface. Lily pads dot the water, frogs sit and occasionally leap, and dragonflies skim across the surface. Leaves and petals drift slowly on the water.
+
+**Mood:** Zen, contemplative, serene. Like sitting on a wooden bridge looking down into a Japanese garden pond.
+
+**Key behaviors:**
+- Koi swim in slow, graceful arcs — wide turns, never rushed
+- Koi occasionally drift to the surface, mouths open (feeding behavior)
+- Koi loosely follow each other, sometimes clustering, sometimes spreading out
+- Frogs sit motionless on lily pads, then suddenly leap to another pad or into the water
+- Frogs croak occasionally (subtle visual: throat puff animation)
+- Dragonflies hover, dart, hover again — fast bursts between pauses
+- A turtle slowly crosses the pond, pausing to bask on a rock
+
+**Environment elements:**
+- Dark, slightly murky water with subtle caustic light patterns on the pond floor
+- Lily pads of varying sizes, some with flowers (white or pink lotus/water lilies)
+- Rocks visible at the bottom through the water, some breaking the surface
+- Fallen leaves and flower petals drifting on the surface
+- Subtle ripples trailing behind koi near the surface
+- Pond edge visible at the margins — mossy stones, ferns, overhanging grass
+- Optional: a stone lantern or bamboo water feature (shishi-odoshi) at the edge
+
+**Koi varieties:**
+| Variety | Color | Notes |
+|---------|-------|-------|
+| Kohaku | White with red patches | Classic, most recognizable |
+| Taisho Sanke | White with red and black | Elegant tricolor |
+| Showa | Black with red and white | Bold, dramatic |
+| Ogon | Solid metallic gold | Shimmers in the light |
+| Asagi | Blue-grey back, red belly | Subtle, beautiful from above |
+
+**Rendering notes (top-down perspective):**
+- Fish are seen from above — body is a tapered oval, tail fans out behind
+- Koi patterns (patches of color) are key to their identity from this angle
+- Fish below the surface have a slight wavering/refraction effect
+- Depth is conveyed by opacity and blur — deeper fish are more muted and diffused
+- Ripples radiate outward from surface-level fish and from frog jumps
+- Lily pads cast subtle shadows on the pond floor
+
+**Creatures:**
+| Creature | Count | Behavior |
+|----------|-------|----------|
+| Koi | 6-10 | Slow gliding, surface feeding, loose grouping |
+| Frogs | 2-4 | Sit on lily pads, occasional leaps, throat puffs |
+| Dragonflies | 1-3 | Hover and dart above the water surface |
+| Turtle | 0-1 | Slow crossing, basking on rocks |
+| Water striders | 3-5 | Skate across the surface with tiny ripples |
+
+---
+
 ## Future Scene Ideas (Not Planned)
 
 These are brainstorm-level ideas, not committed:

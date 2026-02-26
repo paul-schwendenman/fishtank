@@ -47,6 +47,7 @@ Each scene is a standalone environment. The user picks one to display. Scenes ar
 | **Bird Feeder / Backyard** | A backyard scene with birds landing, feeding, hopping, flying off | Phase 2 |
 | **School of Fish** | Open ocean school of fish — larger scale than the tank, with predator dynamics | Phase 3 |
 | **Ant Farm** | Cross-section ant colony with tunnels, foraging, and coordinated work | Phase 3 |
+| **Koi Pond** | Top-down view of a Japanese-style koi pond with frogs, dragonflies, and lily pads | Phase 3 |
 
 See [SCENES.md](./SCENES.md) for detailed scene descriptions.
 
