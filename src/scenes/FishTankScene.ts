@@ -309,21 +309,21 @@ export class FishTankScene implements Scene {
     // 2. Light rays
     this.environment.renderLightRays(ctx, this.time, this.height);
 
-    // 3. Back plants
+    // 3. Substrate (back layer — always behind fish)
+    this.environment.renderSubstrate(ctx, this.width, this.height);
+
+    // 4. Back plants
     this.environment.renderPlants(ctx, this.time, 'back');
 
     // Sort fish by depth (back first)
     const sorted = [...this.fish].sort((a, b) => b.depth - a.depth);
 
-    // 4. Back fish (depth > 0.5)
+    // 5. Back fish (depth > 0.5)
     for (const fish of sorted) {
       if (fish.depth > 0.5) {
         renderFish(ctx, fish);
       }
     }
-
-    // 5. Substrate
-    this.environment.renderSubstrate(ctx, this.width, this.height);
 
     // 6. Decorations
     this.environment.renderDecorations(ctx);
