@@ -270,9 +270,12 @@ A cozy cat cafe viewed from a seated perspective. Cats of various breeds lounge,
 
 These are brainstorm-level ideas, not committed:
 
-- **Coral Reef** — underwater reef teeming with varied marine life
-- **Fireflies** — a dark meadow with fireflies blinking in patterns
+- **Coral Reef** — colorful coral formations, clownfish darting into anemones, tangs and wrasses cruising past, maybe a moray eel peeking from a crevice. Bright, warm, tropical lighting with shafts of sun from above.
+- **Deep Sea** — near-black water, bioluminescent creatures glowing and pulsing, an anglerfish lure dangling in the dark, particles drifting upward. Eerie and beautiful.
+- **Tide Pool** — top-down rocky pool at the shore, crabs scuttling sideways, starfish creeping along, sea urchins, small trapped fish, anemones waving. Waves occasionally wash over the edge.
+- **River** — side view of a flowing freshwater river with visible current, salmon swimming upstream, smooth river rocks, fallen leaves drifting on the surface, maybe a bear paw swiping in.
+- **Jellyfish Tank** — dark cylindrical aquarium, glowing jellyfish drifting and pulsing with translucent bells, ambient particles, color-shifting lighting. Hypnotic and minimal.
+- **Fireflies** — a dark meadow at dusk with fireflies blinking in patterns, grass swaying, distant treeline silhouette
 - **Butterfly Garden** — flowers and butterflies with fluttering, landing, feeding
-- **Tide Pool** — small-scale marine life in a rocky pool
 - **Beehive** — cross-section of a hive with worker bees, honeycomb building
 - **Savanna Watering Hole** — animals arriving at and drinking from a watering hole
