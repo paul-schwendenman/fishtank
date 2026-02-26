@@ -152,6 +152,58 @@ A tranquil koi pond viewed from directly above. Large, colorful koi glide throug
 
 ---
 
+## Fall Tree
+
+A single majestic tree in autumn, viewed from a distance. Its canopy is ablaze with reds, oranges, and golds. Leaves detach one by one and drift slowly to the ground, tumbling and spinning in the air. A carpet of fallen leaves builds up beneath the tree over time.
+
+**Mood:** Quiet, nostalgic, contemplative. The stillness of a crisp autumn day.
+
+**Key behaviors:**
+- Leaves detach from random points in the canopy at a slow, steady rate
+- Each leaf tumbles and sways as it falls — gentle side-to-side rocking, spinning on its axis
+- Wind gusts occasionally sweep through, shaking the tree and releasing a flurry of leaves
+- Leaves slow down and settle as they reach the ground, coming to rest naturally
+- The canopy gradually thins over time, revealing more branches beneath
+- Occasional breeze stirs leaves already on the ground, lifting a few back into the air
+
+**Environment elements:**
+- A large deciduous tree (oak or maple silhouette) with detailed branching structure
+- Canopy of warm autumn colors — a mix of red, orange, gold, and a few lingering greens
+- Grass beneath the tree, partly visible beneath the growing leaf pile
+- Soft sky gradient — pale blue to warm white, maybe hints of distant clouds
+- Gentle rolling ground or a slight hill the tree sits on
+- Optional: a wooden fence, a park bench, or a distant treeline to set the scene
+- Subtle shadow from the tree shifts slowly as if time is passing
+
+**Leaf types:**
+| Type | Shape | Colors | Fall style |
+|------|-------|--------|------------|
+| Maple | Star-shaped, pointed lobes | Bright red, orange, crimson | Slow helicopter spin |
+| Oak | Rounded lobes, elongated | Brown, rust, dark gold | Gentle rocking sway |
+| Birch | Small, rounded | Bright yellow, gold | Quick flutter |
+| Misc | Simple oval | Orange, amber | Lazy tumble |
+
+**Rendering notes:**
+- Leaves should feel hand-drawn — simple shapes with slight irregularity
+- Each leaf has a subtle rotation and foreshortening as it tumbles (2D approximation of 3D spin)
+- Depth layering: some leaves fall in front of the trunk, some behind
+- Fallen leaves on the ground pile up with slight overlap and random angles
+- The canopy is rendered as clusters of colored shapes; as leaves detach, gaps appear
+- Wind gusts visualized by a slight lean of branches and acceleration of falling leaves
+- Light filtering through thinning canopy creates dappled ground shadows
+
+**Animation phases:**
+| Phase | Duration | Description |
+|-------|----------|-------------|
+| Full canopy | 0–30s | Tree starts lush, only a few leaves fall |
+| Steady fall | 30s–3min | Leaves drop at a comfortable pace, ground cover builds |
+| Wind gust | Random | Brief burst of many leaves, tree sways |
+| Thinning | 3–5min | Canopy noticeably sparse, branches showing |
+| Bare | 5min+ | Mostly bare branches, few remaining leaves, thick ground cover |
+| Reset | Fade | Gentle fade transition back to full canopy to loop |
+
+---
+
 ## Future Scene Ideas (Not Planned)
 
 These are brainstorm-level ideas, not committed:
