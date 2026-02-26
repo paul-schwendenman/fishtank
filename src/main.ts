@@ -2,6 +2,7 @@ import { GameLoop } from './engine/GameLoop';
 import { FishTankScene } from './scenes/FishTankScene';
 import { KoiPondScene } from './scenes/KoiPondScene';
 import { JellyfishTankScene } from './scenes/JellyfishTankScene';
+import { FireflyFieldScene } from './scenes/FireflyFieldScene';
 import { SettingsUI, type SceneEntry } from './ui/SettingsUI';
 
 const canvas = document.getElementById('tank') as HTMLCanvasElement;
@@ -28,6 +29,13 @@ const scenes: SceneEntry[] = [
     description: 'Deep sea exhibit',
     icon: '\u{1FABC}',
     create: (w, h) => new JellyfishTankScene(w, h),
+  },
+  {
+    id: 'firefly-field',
+    name: 'Firefly Field',
+    description: 'Moonlit meadow at dusk',
+    icon: '\u{2728}',
+    create: (w, h) => new FireflyFieldScene(w, h),
   },
 ];
 
