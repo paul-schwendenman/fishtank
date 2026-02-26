@@ -4,11 +4,15 @@ const MIN_FORESHORTEN = 0.2;
 
 export function renderFish(ctx: CanvasRenderingContext2D, fish: Fish): void {
   const { species } = fish;
-  const scale = fish.depthScale;
-  const alpha = Math.max(0, fish.spawnOpacity);
+  const clampedOpacity = Math.max(0, Math.min(1, fish.spawnOpacity));
+  const alpha = clampedOpacity;
   if (alpha <= 0) {
     return;
   }
+
+  // Spawn scale: fish grows from 30% to 100% during fade-in
+  const spawnScale = clampedOpacity < 1 ? 0.3 + 0.7 * clampedOpacity : 1;
+  const scale = fish.depthScale * spawnScale;
 
   // Depth-based color desaturation
   const depthDim = 1 - fish.depth * 0.3;
@@ -20,6 +24,12 @@ export function renderFish(ctx: CanvasRenderingContext2D, fish: Fish): void {
   ctx.translate(fish.position.x, fish.position.y);
   // X-flip first so rotation tilts correctly for both directions
   ctx.scale(fish.facingRight ? scale : -scale, scale);
+
+  // Body roll on turns: vertical squish when changing direction
+  if (fish.turnPhase < 1) {
+    ctx.scale(1, 1 - (1 - fish.turnPhase) * 0.25);
+  }
+
   ctx.rotate(fish.facingAngle);
   ctx.globalAlpha = alpha;
 

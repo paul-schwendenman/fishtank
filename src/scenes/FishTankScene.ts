@@ -24,6 +24,27 @@ const BUBBLE_FADE_ZONE = 60;
 const PASSIVE_AVOID_RADIUS = 50;
 const OBSTACLE_LOOKAHEAD = 80;
 
+interface PopParticle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  radius: number;
+}
+
+interface WakeParticle {
+  x: number;
+  y: number;
+  life: number;
+  maxLife: number;
+  size: number;
+}
+
+const WAKE_PARTICLE_CAP = 150;
+const WAKE_EMIT_INTERVAL = 0.05;
+
 interface FishPreset {
   species: string;
   count: number;
@@ -51,6 +72,9 @@ export class FishTankScene implements Scene {
   private bubbleTimer: number = 0;
   private spatialHash = new SpatialHash<Fish>(100);
   private obstacles: Obstacle[] = [];
+  private popParticles: PopParticle[] = [];
+  private wakeParticles: WakeParticle[] = [];
+  private wakeTimer: number = 0;
 
   constructor(width: number, height: number) {
     this.width = width;
@@ -298,16 +322,66 @@ export class FishTankScene implements Scene {
       this.bubbles.push(new Bubble(aer.x, aer.y));
     }
 
-    // Update bubbles
+    // Update bubbles and spawn pop particles
     for (const bubble of this.bubbles) {
       bubble.update(dt, this.bounds.top);
+      if (bubble.isInFadeZone(this.bounds.top, BUBBLE_FADE_ZONE)) {
+        bubble.hasPopped = true;
+        const count = 2 + Math.floor(Math.random() * 2); // 2-3
+        for (let i = 0; i < count; i++) {
+          this.popParticles.push({
+            x: bubble.x,
+            y: bubble.y,
+            vx: (Math.random() - 0.5) * 60,
+            vy: (Math.random() - 0.5) * 40 - 20,
+            life: 0,
+            maxLife: 0.2 + Math.random() * 0.1,
+            radius: bubble.radius * 0.3 + Math.random() * 0.5,
+          });
+        }
+      }
     }
     this.bubbles = this.bubbles.filter((b) => b.alive);
+
+    // Update pop particles
+    for (const p of this.popParticles) {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life += dt;
+    }
+    this.popParticles = this.popParticles.filter(p => p.life < p.maxLife);
 
     // Update particles
     for (const particle of this.particles) {
       particle.update(dt, this.bounds.left, this.bounds.right, this.bounds.top, this.bounds.bottom);
     }
+
+    // Wake particles from fast fish
+    this.wakeTimer += dt;
+    if (this.wakeTimer >= WAKE_EMIT_INTERVAL) {
+      this.wakeTimer -= WAKE_EMIT_INTERVAL;
+      if (this.wakeParticles.length < WAKE_PARTICLE_CAP) {
+        for (const fish of this.fish) {
+          if (fish.isMovingFast && fish.spawnOpacity >= 1) {
+            // Emit behind the tail
+            const tailDir = fish.facingRight ? -1 : 1;
+            const bodyLen = fish.species.bodyLength * fish.depthScale;
+            this.wakeParticles.push({
+              x: fish.position.x + tailDir * bodyLen * 0.5 + (Math.random() - 0.5) * 3,
+              y: fish.position.y + (Math.random() - 0.5) * 4,
+              life: 0,
+              maxLife: 0.3 + Math.random() * 0.3,
+              size: 0.5 + Math.random() * 0.5,
+            });
+            if (this.wakeParticles.length >= WAKE_PARTICLE_CAP) break;
+          }
+        }
+      }
+    }
+    for (const w of this.wakeParticles) {
+      w.life += dt;
+    }
+    this.wakeParticles = this.wakeParticles.filter(w => w.life < w.maxLife);
   }
 
   render(ctx: CanvasRenderingContext2D): void {
@@ -318,6 +392,9 @@ export class FishTankScene implements Scene {
 
     // 2. Light rays
     this.environment.renderLightRays(ctx, this.time, this.height);
+
+    // 2b. Surface shimmer
+    this.environment.renderSurfaceShimmer(ctx, this.time, this.width);
 
     // 3. Substrate (back layer — always behind fish)
     this.environment.renderSubstrate(ctx, this.width, this.height);
@@ -333,14 +410,41 @@ export class FishTankScene implements Scene {
       item.render();
     }
 
+    // 8b. Wake particles (after fish, before bubbles)
+    for (const w of this.wakeParticles) {
+      const alpha = (1 - w.life / w.maxLife) * 0.3;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = 'rgba(180, 210, 240, 1)';
+      ctx.beginPath();
+      ctx.arc(w.x, w.y, w.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
     // 9. Bubbles
     for (const bubble of this.bubbles) {
       renderBubble(ctx, bubble, this.bounds.top, BUBBLE_FADE_ZONE);
+    }
+
+    // 9b. Pop particles
+    for (const p of this.popParticles) {
+      const alpha = 1 - p.life / p.maxLife;
+      ctx.save();
+      ctx.globalAlpha = alpha * 0.6;
+      ctx.fillStyle = 'rgba(180, 220, 255, 1)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
 
     // 10. Particles
     for (const particle of this.particles) {
       renderParticle(ctx, particle);
     }
+
+    // 11. Glass edge vignette (overlays everything — glass is closest to viewer)
+    this.environment.renderGlassEdges(ctx, this.width, this.height);
   }
 }

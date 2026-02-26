@@ -66,6 +66,10 @@ export class Fish {
     this.az += zForce;
   }
 
+  get isMovingFast(): boolean {
+    return this.velocity.mag() > this.species.maxSpeed * 0.6;
+  }
+
   get depthScale(): number {
     return 1.0 - this.depth * 0.3; // 1.0 at front, 0.7 at back
   }
