@@ -106,11 +106,12 @@ export class EnvironmentRenderer {
       { x: 0.88, back: false },
       { x: 0.94, back: true },
     ];
+    const tankHeight = this.bounds.bottom - this.bounds.top;
     const greens = ['#1a5c2a', '#2d7a3e', '#1e6830', '#3a8c4f', '#245c32', '#4a9c5c'];
     plantPositions.forEach((pos) => {
       const depth = pos.back ? 0.6 + Math.random() * 0.2 : 0.1 + Math.random() * 0.2;
       const x = left + width * (pos.x + (Math.random() - 0.5) * 0.03);
-      const height = 120 + Math.random() * 160;
+      const height = tankHeight * (0.25 + Math.random() * 0.55); // 25-80% of tank
       const segments = 6 + Math.floor(Math.random() * 5);
       const color = pos.back
         ? '#1a4c2a'  // muted for back
@@ -140,7 +141,7 @@ export class EnvironmentRenderer {
       this.plants.push({
         x: bx,
         baseY: bottom - depth * 20,
-        height: 60 + Math.random() * 40,
+        height: tankHeight * (0.15 + Math.random() * 0.25), // 15-40% of tank
         segments: 5,
         color: bushyGreens[Math.floor(Math.random() * bushyGreens.length)]!,
         phase: Math.random() * Math.PI * 2,
@@ -161,7 +162,7 @@ export class EnvironmentRenderer {
       this.plants.push({
         x: cx,
         baseY: bottom - depth * 20,
-        height: 10 + Math.random() * 10,
+        height: tankHeight * (0.03 + Math.random() * 0.04), // 3-7% of tank
         segments: 3,
         color: carpetGreens[Math.floor(Math.random() * carpetGreens.length)]!,
         phase: Math.random() * Math.PI * 2,
@@ -178,8 +179,8 @@ export class EnvironmentRenderer {
     const rockPositions = [0.25, 0.6];
     rockPositions.forEach((xPct) => {
       const x = left + width * xPct;
-      const w = 20 + Math.random() * 30;
-      const h = 15 + Math.random() * 15;
+      const w = tankHeight * (0.06 + Math.random() * 0.08); // 6-14% of tank
+      const h = tankHeight * (0.04 + Math.random() * 0.06); // 4-10% of tank
       const points = [];
       const numPoints = 6 + Math.floor(Math.random() * 3);
       for (let j = 0; j < numPoints; j++) {
@@ -201,9 +202,9 @@ export class EnvironmentRenderer {
     // Cave/arch decoration
     this.rocks.push({
       x: left + width * 0.45,
-      y: bottom - 20,
-      width: 45,
-      height: 30,
+      y: bottom - tankHeight * 0.04,
+      width: tankHeight * 0.1,
+      height: tankHeight * 0.07,
       color: '#5a4a3a',
       points: [
         { dx: -1, dy: 0.4 },
@@ -253,8 +254,8 @@ export class EnvironmentRenderer {
     // Driftwood (1 piece)
     this.driftwood = [];
     const dwX = left + width * 0.35;
-    const dwY = bottom - 25;
-    const dwLength = 80 + Math.random() * 40;
+    const dwY = bottom - tankHeight * 0.05;
+    const dwLength = tankHeight * (0.25 + Math.random() * 0.2); // 25-45% of tank
     const dwAngle = -0.35 + Math.random() * 0.15; // roughly -20 degrees
     const branchCount = 2 + Math.floor(Math.random() * 2); // 2-3
     const branches: DriftwoodBranch[] = [];
@@ -262,7 +263,7 @@ export class EnvironmentRenderer {
       branches.push({
         startT: 0.3 + b * 0.25 + Math.random() * 0.1,
         angle: (Math.random() > 0.5 ? -1 : 1) * (0.4 + Math.random() * 0.5),
-        length: 20 + Math.random() * 25,
+        length: tankHeight * (0.08 + Math.random() * 0.1), // 8-18% of tank
         thickness: 2 + Math.random() * 2,
       });
     }
