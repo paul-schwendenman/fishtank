@@ -70,6 +70,28 @@ Scenes are registered in `main.ts` as a `SceneEntry[]` array. SettingsUI reads t
 
 URL hash navigation: `#fish-tank`, `#koi-pond`, etc.
 
+## Design Principles
+
+From `docs/PRODUCT_VISION.md` — these guide every scene:
+
+- **Relaxing first.** No jarring movements, no sudden changes, no UI clutter.
+- **Believable movement.** Animals move naturally. If movement doesn't feel right, nothing else matters.
+- **Beautiful to look at.** Stylized 2D with rich colors, subtle depth, gentle lighting. Not photorealism.
+- **Simple on the surface.** No visible configuration clutter. It just works.
+- **Modular by design.** Each scene is self-contained. New scenes don't touch existing ones.
+
+## Docs
+
+| Doc | What it is |
+|-----|------------|
+| `docs/PRODUCT_VISION.md` | Core principles, visual style, performance targets — **read this first** |
+| `docs/SCENES.md` | Detailed specs for future scene ideas (Flock of Birds, Bird Feeder, Ant Farm, Fall Tree, Cat Cafe) |
+| `docs/FISH_TANK.md` | Original Fish Tank scene spec (implemented) |
+| `docs/PHASE_1_SIMPLE_MOVEMENT.md` | Steering behaviors, wander, boundaries (implemented) |
+| `docs/PHASE_2_INTERACTIONS.md` | Schooling, separation, force budget, spatial hash (implemented) |
+| `docs/PHASE_3_COMPLEX_BEHAVIOR.md` | Needs system, hunger/energy/curiosity states (**not yet built**) |
+| `docs/FUTURE_INTERACTIONS.md` | User interactions: tap to feed, tap glass, cursor follow (**not yet built**) |
+
 ## Adding a New Scene — Checklist
 
 1. **Entities** — create classes in `src/entities/` (position, velocity, heading, spawnOpacity, state machine if needed)
