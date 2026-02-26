@@ -6,14 +6,10 @@ import { JELLYFISH_VARIETIES } from '../entities/JellyfishVariety';
 import {
   jellyfishWander,
   ambientCurrent,
-  avoidBoundaries,
   jellyfishSeparation,
-  type RectBounds,
 } from '../behaviors/JellyfishSteering';
 import {
   composeForceBudget,
-  type PrioritizedForce,
-  PRIORITY_BOUNDARY,
   PRIORITY_SEPARATION,
 } from '../behaviors/ForceBudget';
 import { SpatialHash } from '../spatial/SpatialHash';
@@ -22,11 +18,12 @@ import { renderJellyfish } from '../rendering/JellyfishRenderer';
 
 const JELLYFISH_COUNT = 7;
 const SEPARATION_RADIUS = 80;
+// How far offscreen before recycling
+const OFFSCREEN_MARGIN = 200;
 
 export class JellyfishTankScene implements Scene {
   private width: number;
   private height: number;
-  private bounds: RectBounds;
   private jellyfish: Jellyfish[] = [];
   private environment: JellyfishTankRenderer;
   private time: number = 0;
@@ -35,16 +32,11 @@ export class JellyfishTankScene implements Scene {
   constructor(width: number, height: number) {
     this.width = width;
     this.height = height;
-    this.bounds = this.computeBounds();
     this.environment = new JellyfishTankRenderer(width, height);
-    this.spawnJellyfish();
+    this.spawnInitialJellyfish();
   }
 
-  private computeBounds(): RectBounds {
-    return { x: 0, y: 0, width: this.width, height: this.height };
-  }
-
-  private spawnJellyfish(): void {
+  private spawnInitialJellyfish(): void {
     let spawnDelay = 0;
     for (let i = 0; i < JELLYFISH_COUNT; i++) {
       const variety = JELLYFISH_VARIETIES[i % JELLYFISH_VARIETIES.length]!;
@@ -59,10 +51,50 @@ export class JellyfishTankScene implements Scene {
     }
   }
 
+  /** Spawn a jellyfish at a random edge, heading inward */
+  private spawnFromEdge(variety: typeof JELLYFISH_VARIETIES[number]): Jellyfish {
+    const edge = Math.floor(Math.random() * 4);
+    let pos: Vector;
+    let heading: number;
+
+    switch (edge) {
+      case 0: // top
+        pos = new Vector(randomRange(0, this.width), -OFFSCREEN_MARGIN * 0.5);
+        heading = randomRange(Math.PI * 0.1, Math.PI * 0.4);
+        break;
+      case 1: // bottom
+        pos = new Vector(randomRange(0, this.width), this.height + OFFSCREEN_MARGIN * 0.5);
+        heading = randomRange(-Math.PI * 0.4, -Math.PI * 0.1);
+        break;
+      case 2: // left
+        pos = new Vector(-OFFSCREEN_MARGIN * 0.5, randomRange(0, this.height));
+        heading = randomRange(-Math.PI * 0.3, Math.PI * 0.3);
+        break;
+      default: // right
+        pos = new Vector(this.width + OFFSCREEN_MARGIN * 0.5, randomRange(0, this.height));
+        heading = randomRange(Math.PI * 0.7, Math.PI * 1.3);
+        break;
+    }
+
+    const jelly = new Jellyfish(variety, pos);
+    jelly.heading = heading;
+    jelly.velocity = jelly.thrustDirection().scale(randomRange(3, 6));
+    jelly.spawnOpacity = -randomRange(0, 0.5);
+    return jelly;
+  }
+
+  private isOffscreen(jelly: Jellyfish): boolean {
+    return (
+      jelly.position.x < -OFFSCREEN_MARGIN ||
+      jelly.position.x > this.width + OFFSCREEN_MARGIN ||
+      jelly.position.y < -OFFSCREEN_MARGIN ||
+      jelly.position.y > this.height + OFFSCREEN_MARGIN
+    );
+  }
+
   resize(width: number, height: number): void {
     this.width = width;
     this.height = height;
-    this.bounds = this.computeBounds();
     this.environment.resize(width, height);
   }
 
@@ -79,36 +111,36 @@ export class JellyfishTankScene implements Scene {
 
     // Update jellyfish
     for (const jelly of this.jellyfish) {
-      const forces: PrioritizedForce[] = [];
-      const budget = jelly.maxForce * 3;
-
-      // Boundary avoidance (highest priority)
-      forces.push({
-        force: avoidBoundaries(jelly, this.bounds),
-        priority: PRIORITY_BOUNDARY,
-      });
-
       // Separation
       const neighbors = this.spatialHash.query(
         jelly.position.x,
         jelly.position.y,
         SEPARATION_RADIUS,
       );
-      forces.push({
-        force: jellyfishSeparation(jelly, neighbors, SEPARATION_RADIUS),
-        priority: PRIORITY_SEPARATION,
-      });
-
-      const resultForce = composeForceBudget(forces, budget);
+      const sepForce = jellyfishSeparation(jelly, neighbors, SEPARATION_RADIUS);
+      const resultForce = composeForceBudget(
+        [{ force: sepForce, priority: PRIORITY_SEPARATION }],
+        jelly.maxForce * 3,
+      );
       jelly.applyForce(resultForce);
 
-      // Wander + ambient current only while thrusting — coast cleanly between pulses
+      // Wander + ambient current only while thrusting
       if (jelly.contracting) {
         jelly.applyForce(jellyfishWander(jelly));
         jelly.applyForce(current.scale(0.15));
       }
 
       jelly.update(dt);
+    }
+
+    // Recycle offscreen jellyfish — replace with new one from a random edge
+    for (let i = 0; i < this.jellyfish.length; i++) {
+      const jelly = this.jellyfish[i]!;
+      if (jelly.spawnOpacity >= 0 && this.isOffscreen(jelly)) {
+        this.jellyfish[i] = this.spawnFromEdge(
+          JELLYFISH_VARIETIES[i % JELLYFISH_VARIETIES.length]!,
+        );
+      }
     }
 
     // Update plankton with current influence
