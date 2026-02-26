@@ -3,6 +3,7 @@ import { FishTankScene } from './scenes/FishTankScene';
 import { KoiPondScene } from './scenes/KoiPondScene';
 import { JellyfishTankScene } from './scenes/JellyfishTankScene';
 import { FireflyFieldScene } from './scenes/FireflyFieldScene';
+import { TidePoolScene } from './scenes/TidePoolScene';
 import { SettingsUI, type SceneEntry } from './ui/SettingsUI';
 import { initFullscreenButton } from './ui/fullscreen';
 
@@ -37,6 +38,13 @@ const scenes: SceneEntry[] = [
     description: 'Moonlit meadow at dusk',
     icon: '\u{2728}',
     create: (w, h) => new FireflyFieldScene(w, h),
+  },
+  {
+    id: 'tide-pool',
+    name: 'Tide Pool',
+    description: 'Sun-drenched rocky shore',
+    icon: '\u{1F980}',
+    create: (w, h) => new TidePoolScene(w, h),
   },
 ];
 
