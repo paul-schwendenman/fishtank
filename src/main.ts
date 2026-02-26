@@ -4,6 +4,7 @@ import { KoiPondScene } from './scenes/KoiPondScene';
 import { JellyfishTankScene } from './scenes/JellyfishTankScene';
 import { FireflyFieldScene } from './scenes/FireflyFieldScene';
 import { SettingsUI, type SceneEntry } from './ui/SettingsUI';
+import { initFullscreenButton } from './ui/fullscreen';
 
 const canvas = document.getElementById('tank') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d')!;
@@ -48,6 +49,8 @@ const initial = getInitialScene();
 let scene = initial.create(window.innerWidth, window.innerHeight);
 
 const loop = new GameLoop(scene, ctx);
+
+initFullscreenButton();
 
 new SettingsUI(scenes, initial.id, (entry) => {
   window.location.hash = entry.id;
