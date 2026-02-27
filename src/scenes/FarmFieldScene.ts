@@ -87,9 +87,36 @@ export class FarmFieldScene implements Scene {
       const t = Math.pow(Math.random(), 2);
       const y = fieldTop + t * (fieldBottom - fieldTop);
       cow.position = new Vector(x, y);
-      // Depth based on y position within the field (higher = further away)
-      const range = fieldBottom - fieldTop;
-      cow.depth = range > 0 ? 1 - (y - fieldTop) / range : 0.5;
+      this.pushOutOfPond(cow);
+      this.updateCowDepth(cow);
+    }
+  }
+
+  private updateCowDepth(cow: Cow): void {
+    const fieldTop = this.environment.horizonY + (this.environment.fenceY - this.environment.horizonY) * 0.15;
+    const fieldBottom = this.environment.groundY(cow.position.x) - 15;
+    const range = fieldBottom - fieldTop;
+    cow.depth = range > 0 ? 1 - (cow.position.y - fieldTop) / range : 0.5;
+  }
+
+  private pushOutOfPond(cow: Cow): void {
+    const pond = this.environment.pondBounds;
+    if (!pond) return;
+
+    const margin = 25;
+    const dx = cow.position.x - pond.cx;
+    const dy = cow.position.y - pond.cy;
+    const ndx = dx / (pond.rx + margin);
+    const ndy = dy / (pond.ry + margin);
+    const dist = Math.sqrt(ndx * ndx + ndy * ndy);
+
+    if (dist < 1) {
+      // Push to nearest edge of exclusion zone
+      const angle = Math.atan2(dy, dx);
+      cow.position = new Vector(
+        pond.cx + Math.cos(angle) * (pond.rx + margin + 5),
+        pond.cy + Math.sin(angle) * (pond.ry + margin + 5),
+      );
     }
   }
 
@@ -149,13 +176,17 @@ export class FarmFieldScene implements Scene {
         }
       }
 
-      // Keep cows within the field (behind fence contour)
+      // Keep cows out of pond and within field bounds
+      this.pushOutOfPond(cow);
+
       const fieldTop = this.environment.horizonY + (this.environment.fenceY - this.environment.horizonY) * 0.15;
       const fieldBottom = this.environment.groundY(cow.position.x) - 15;
       const clampedY = Math.max(fieldTop, Math.min(fieldBottom, cow.position.y));
       if (clampedY !== cow.position.y) {
         cow.position = new Vector(cow.position.x, clampedY);
       }
+
+      this.updateCowDepth(cow);
     }
 
     // Group dynamics: contagious resting/walking

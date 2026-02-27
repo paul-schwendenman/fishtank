@@ -107,7 +107,23 @@ export class FarmFieldRenderer {
     this.generate();
   }
 
-  /** Sine-based rolling terrain function — returns y for a given x */
+  /** Sine-based rolling terrain — horizon edge */
+  horizonCurveY(x: number): number {
+    const t = x / this.width;
+    return this.horizonY
+      + Math.sin(t * Math.PI * 1.8 + 0.5) * this.height * 0.008
+      + Math.sin(t * Math.PI * 3.2 + 2) * this.height * 0.004;
+  }
+
+  /** Sine-based rolling terrain — back/mid field boundary */
+  midFieldY(x: number): number {
+    const t = x / this.width;
+    return this.backFieldY
+      + Math.sin(t * Math.PI * 2.0 + 1.2) * this.height * 0.01
+      + Math.sin(t * Math.PI * 3.5 + 0.8) * this.height * 0.005;
+  }
+
+  /** Sine-based rolling terrain — fence/foreground line */
   groundY(x: number): number {
     const t = x / this.width;
     return this.fenceY
@@ -282,12 +298,13 @@ export class FarmFieldRenderer {
   // --- Render methods (called in layer order by scene) ---
 
   renderSky(ctx: CanvasRenderingContext2D): void {
-    const grad = ctx.createLinearGradient(0, 0, 0, this.horizonY);
+    const grad = ctx.createLinearGradient(0, 0, 0, this.horizonY + this.height * 0.02);
     grad.addColorStop(0, '#87CEEB');
     grad.addColorStop(0.6, '#b0d8f0');
     grad.addColorStop(1, '#e8e0d0');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, this.width, this.horizonY);
+    // Fill generously — the back field will paint over the bottom edge
+    ctx.fillRect(0, 0, this.width, this.horizonY + this.height * 0.03);
   }
 
   renderClouds(ctx: CanvasRenderingContext2D, _time: number): void {
@@ -347,12 +364,27 @@ export class FarmFieldRenderer {
   }
 
   renderBackField(ctx: CanvasRenderingContext2D): void {
-    // Lighter green pasture
+    const steps = Math.ceil(this.width / 4);
+    // Lighter green pasture with curved top edge
     const grad = ctx.createLinearGradient(0, this.horizonY, 0, this.backFieldY);
     grad.addColorStop(0, '#7ab868');
     grad.addColorStop(1, '#68a858');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, this.horizonY, this.width, this.backFieldY - this.horizonY);
+    ctx.beginPath();
+    // Top edge follows horizon curve
+    for (let i = 0; i <= steps; i++) {
+      const x = (i / steps) * this.width;
+      const y = this.horizonCurveY(x);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    // Bottom edge follows mid-field curve (right to left)
+    for (let i = steps; i >= 0; i--) {
+      const x = (i / steps) * this.width;
+      ctx.lineTo(x, this.midFieldY(x));
+    }
+    ctx.closePath();
+    ctx.fill();
   }
 
   renderMidTree(ctx: CanvasRenderingContext2D, tree: MidTree): void {
@@ -391,12 +423,27 @@ export class FarmFieldRenderer {
   }
 
   renderMidField(ctx: CanvasRenderingContext2D): void {
-    // Richer green mid-field
+    const steps = Math.ceil(this.width / 4);
+    // Richer green mid-field with curved edges
     const grad = ctx.createLinearGradient(0, this.backFieldY, 0, this.fenceY);
     grad.addColorStop(0, '#58a048');
     grad.addColorStop(1, '#4a9040');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, this.backFieldY, this.width, this.fenceY - this.backFieldY);
+    ctx.beginPath();
+    // Top edge follows mid-field curve
+    for (let i = 0; i <= steps; i++) {
+      const x = (i / steps) * this.width;
+      const y = this.midFieldY(x);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    // Bottom edge follows ground/fence curve (right to left)
+    for (let i = steps; i >= 0; i--) {
+      const x = (i / steps) * this.width;
+      ctx.lineTo(x, this.groundY(x));
+    }
+    ctx.closePath();
+    ctx.fill();
 
     // Subtle grass texture lines
     ctx.save();
