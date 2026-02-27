@@ -1,0 +1,299 @@
+import type { Cow } from '../entities/Cow';
+import { lerp } from '../utils/math';
+
+export function renderCow(ctx: CanvasRenderingContext2D, cow: Cow, time: number): void {
+  if (cow.spawnOpacity <= 0) return;
+
+  // Depth-based scaling and fading
+  const depthScale = lerp(1.0, 0.55, cow.depth);
+  const depthAlpha = lerp(1.0, 0.6, cow.depth);
+
+  ctx.save();
+  ctx.globalAlpha = Math.min(cow.spawnOpacity, 1) * depthAlpha;
+  ctx.translate(cow.position.x, cow.position.y);
+  ctx.scale(depthScale, depthScale);
+
+  // Flip for facing direction
+  if (!cow.facingRight) {
+    ctx.scale(-1, 1);
+  }
+
+  const bw = cow.bodyWidth;
+  const bh = cow.bodyHeight;
+  const lying = cow.lyingTransition;
+
+  // Lying compresses body vertically
+  const bodyScaleY = lerp(1.0, 0.5, lying);
+  const bodyOffsetY = lying * bh * 0.25; // shift down as lying
+
+  // --- Shadow ---
+  ctx.save();
+  ctx.globalAlpha *= 0.15;
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  const shadowW = bw * (0.8 + lying * 0.2);
+  ctx.ellipse(0, bh * 0.5 + 2, shadowW, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // --- Legs (hidden when fully lying) ---
+  if (lying < 0.95) {
+    ctx.save();
+    ctx.globalAlpha *= (1 - lying);
+    renderLegs(ctx, cow, bw, bh);
+    ctx.restore();
+  }
+
+  // --- Body ---
+  ctx.save();
+  ctx.translate(0, bodyOffsetY);
+  ctx.scale(1, bodyScaleY);
+
+  // Walk bob
+  const walkBob = cow.state === 'walking' ? Math.sin(cow.walkPhase * 2) * 2 : 0;
+  ctx.translate(0, -walkBob);
+
+  // Body ellipse
+  ctx.beginPath();
+  ctx.ellipse(0, 0, bw * 0.5, bh * 0.5, 0, 0, Math.PI * 2);
+  ctx.fillStyle = cow.variety.baseColor;
+  ctx.fill();
+
+  // --- Markings ---
+  renderMarkings(ctx, cow, bw, bh);
+
+  // Belly highlight
+  ctx.beginPath();
+  ctx.ellipse(0, bh * 0.15, bw * 0.35, bh * 0.2, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.fill();
+
+  ctx.restore(); // undo body transform
+
+  // --- Udder (below body, only visible standing) ---
+  if (lying < 0.5) {
+    ctx.save();
+    ctx.globalAlpha *= (1 - lying * 2);
+    ctx.fillStyle = '#e8c8b0';
+    ctx.beginPath();
+    ctx.ellipse(-bw * 0.1, bh * 0.35 + bodyOffsetY, bw * 0.1, bh * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // --- Head ---
+  renderHead(ctx, cow, bw, bh, bodyOffsetY, bodyScaleY, time);
+
+  // --- Tail ---
+  renderTail(ctx, cow, bw, bh, bodyOffsetY, bodyScaleY, time);
+
+  ctx.restore(); // main restore
+}
+
+function renderLegs(ctx: CanvasRenderingContext2D, cow: Cow, bw: number, bh: number): void {
+  ctx.strokeStyle = cow.variety.legColor;
+  ctx.lineWidth = bw * 0.06;
+  ctx.lineCap = 'round';
+
+  const legLength = bh * 0.6;
+  const wp = cow.walkPhase;
+  const isWalking = cow.state === 'walking';
+
+  // 4 legs with phase offsets (walk cycle)
+  const legPositions = [
+    { x: bw * 0.28, phaseOff: 0 },       // front-right
+    { x: bw * 0.2, phaseOff: Math.PI },   // front-left
+    { x: -bw * 0.22, phaseOff: Math.PI * 0.5 }, // back-right
+    { x: -bw * 0.28, phaseOff: Math.PI * 1.5 }, // back-left
+  ];
+
+  for (const leg of legPositions) {
+    const swing = isWalking ? Math.sin(wp + leg.phaseOff) * bw * 0.08 : 0;
+    const lift = isWalking ? Math.max(0, -Math.sin(wp + leg.phaseOff)) * bh * 0.1 : 0;
+
+    const topX = leg.x;
+    const topY = bh * 0.2;
+    const kneeX = leg.x + swing * 0.3;
+    const kneeY = topY + legLength * 0.5;
+    const footX = leg.x + swing;
+    const footY = topY + legLength - lift;
+
+    ctx.beginPath();
+    ctx.moveTo(topX, topY);
+    ctx.lineTo(kneeX, kneeY);
+    ctx.lineTo(footX, footY);
+    ctx.stroke();
+
+    // Hoof
+    ctx.fillStyle = '#2a2a2a';
+    ctx.beginPath();
+    ctx.arc(footX, footY, bw * 0.025, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function renderMarkings(ctx: CanvasRenderingContext2D, cow: Cow, bw: number, bh: number): void {
+  if (cow.variety.pattern === 'solid') return;
+
+  ctx.save();
+  // Clip to body
+  ctx.beginPath();
+  ctx.ellipse(0, 0, bw * 0.5, bh * 0.5, 0, 0, Math.PI * 2);
+  ctx.clip();
+
+  if (cow.variety.pattern === 'belt') {
+    // White belt across middle
+    ctx.fillStyle = cow.variety.beltColor ?? '#f0ede8';
+    ctx.fillRect(-bw * 0.15, -bh * 0.5, bw * 0.3, bh);
+  } else {
+    // Patches
+    for (const patch of cow.bodyPatches) {
+      ctx.fillStyle = cow.variety.patches[0]?.color ?? '#1a1a1a';
+      ctx.beginPath();
+      ctx.save();
+      ctx.translate(patch.cx * bw, patch.cy * bh);
+      ctx.rotate(patch.rotation);
+      ctx.ellipse(0, 0, patch.rx * bw, patch.ry * bh, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // Shaggy texture for Belted Galloway
+  if (cow.variety.shaggy) {
+    ctx.globalAlpha = 0.15;
+    ctx.strokeStyle = cow.variety.baseColor;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 30; i++) {
+      const x = (Math.random() - 0.5) * bw;
+      const y = (Math.random() - 0.5) * bh;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + (Math.random() - 0.5) * 6, y + (Math.random() - 0.5) * 4);
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
+}
+
+function renderHead(
+  ctx: CanvasRenderingContext2D,
+  cow: Cow,
+  bw: number, bh: number,
+  bodyOffsetY: number,
+  bodyScaleY: number,
+  _time: number,
+): void {
+  const headSize = bw * 0.18;
+  const neckLen = bw * 0.2;
+
+  // Head position based on headAngle
+  const headBaseX = bw * 0.4;
+  const headBaseY = -bh * 0.15 * bodyScaleY + bodyOffsetY;
+  const headX = headBaseX + Math.cos(cow.headAngle) * neckLen;
+  const headY = headBaseY + Math.sin(cow.headAngle) * neckLen;
+
+  // Neck
+  ctx.strokeStyle = cow.variety.headColor;
+  ctx.lineWidth = bw * 0.1;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(headBaseX, headBaseY);
+  ctx.lineTo(headX, headY);
+  ctx.stroke();
+
+  // Head oval
+  ctx.save();
+  ctx.translate(headX, headY);
+  ctx.rotate(cow.headAngle * 0.5);
+
+  ctx.fillStyle = cow.variety.headColor;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, headSize, headSize * 0.7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Muzzle (lighter area)
+  ctx.fillStyle = 'rgba(220, 200, 180, 0.4)';
+  ctx.beginPath();
+  ctx.ellipse(headSize * 0.5, headSize * 0.15, headSize * 0.4, headSize * 0.35, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Nostril dots
+  ctx.fillStyle = 'rgba(60, 40, 30, 0.5)';
+  ctx.beginPath();
+  ctx.arc(headSize * 0.65, headSize * 0.05, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(headSize * 0.65, headSize * 0.25, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eye
+  ctx.fillStyle = '#1a1208';
+  ctx.beginPath();
+  ctx.arc(headSize * 0.1, -headSize * 0.2, headSize * 0.12, 0, Math.PI * 2);
+  ctx.fill();
+  // Eye highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.beginPath();
+  ctx.arc(headSize * 0.12, -headSize * 0.23, headSize * 0.05, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Ears
+  const earFlick = cow.isEarFlicking ? 0.3 : 0;
+  // Top ear
+  ctx.fillStyle = cow.variety.headColor;
+  ctx.beginPath();
+  ctx.ellipse(-headSize * 0.3, -headSize * 0.55 - earFlick * 3, headSize * 0.2, headSize * 0.12, -0.5 - earFlick, 0, Math.PI * 2);
+  ctx.fill();
+  // Inner ear
+  ctx.fillStyle = 'rgba(200, 160, 140, 0.5)';
+  ctx.beginPath();
+  ctx.ellipse(-headSize * 0.3, -headSize * 0.55 - earFlick * 3, headSize * 0.12, headSize * 0.07, -0.5 - earFlick, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Jaw/chewing animation
+  if (cow.jawPhase > 0) {
+    const chew = Math.sin(cow.jawPhase) * 1.5;
+    ctx.fillStyle = cow.variety.headColor;
+    ctx.beginPath();
+    ctx.ellipse(headSize * 0.3, headSize * 0.3 + chew, headSize * 0.25, headSize * 0.15, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function renderTail(
+  ctx: CanvasRenderingContext2D,
+  cow: Cow,
+  bw: number, bh: number,
+  bodyOffsetY: number,
+  bodyScaleY: number,
+  _time: number,
+): void {
+  const tailBaseX = -bw * 0.48;
+  const tailBaseY = -bh * 0.1 * bodyScaleY + bodyOffsetY;
+  const swish = Math.sin(cow.tailPhase) * 15;
+
+  ctx.strokeStyle = cow.variety.baseColor;
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(tailBaseX, tailBaseY);
+  ctx.quadraticCurveTo(
+    tailBaseX - bw * 0.15,
+    tailBaseY + bh * 0.3 + swish * 0.3,
+    tailBaseX - bw * 0.1 + swish * 0.5,
+    tailBaseY + bh * 0.5 + swish,
+  );
+  ctx.stroke();
+
+  // Tail tuft
+  const tuftX = tailBaseX - bw * 0.1 + swish * 0.5;
+  const tuftY = tailBaseY + bh * 0.5 + swish;
+  ctx.fillStyle = cow.variety.baseColor;
+  ctx.beginPath();
+  ctx.ellipse(tuftX, tuftY, 4, 3, swish * 0.03, 0, Math.PI * 2);
+  ctx.fill();
+}

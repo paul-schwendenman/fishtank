@@ -266,6 +266,38 @@ A cozy cat cafe viewed from a seated perspective. Cats of various breeds lounge,
 
 ---
 
+## Farm Field
+
+**Full spec:** [FARM_FIELD.md](./FARM_FIELD.md)
+
+A pastoral dairy farm viewed from the side. Cows graze, rest, and wander across a gently rolling green field under a wide open sky. Butterflies drift between wildflowers, birds perch on fence posts, and clouds drift slowly overhead.
+
+**Mood:** Warm, spacious, peaceful. Like sitting on a hillside watching the world slow down.
+
+**Key behaviors:**
+- Cows graze with heads lowered, occasionally lifting to look around
+- Cows walk in a slow amble, loosely clustering together
+- Cows lie down to rest, then rise with that characteristic awkward heave
+- Butterflies flutter between wildflowers, birds hop along the fence
+
+**Environment elements:**
+- Gently rolling green pasture with wildflowers
+- Wooden post-and-rail fence across the mid-ground
+- Broad trees providing shade, distant treeline on the horizon
+- Wide open sky with soft cumulus clouds drifting past
+- Foreground grass swaying in a gentle breeze
+
+**Cow varieties:**
+| Variety | Color | Notes |
+|---------|-------|-------|
+| Holstein | White with black patches | Classic dairy cow |
+| Jersey | Warm tan/fawn | Gentle, compact build |
+| Brown Swiss | Solid grey-brown | Calm, sturdy |
+| Guernsey | Golden-red and white | Warm distinctive markings |
+| Belted Galloway | Black with white belt | The "Oreo cow" — visually striking |
+
+---
+
 ## Future Scene Ideas (Not Planned)
 
 These are brainstorm-level ideas, not committed:

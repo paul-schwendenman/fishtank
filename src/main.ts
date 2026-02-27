@@ -4,6 +4,7 @@ import { KoiPondScene } from './scenes/KoiPondScene';
 import { JellyfishTankScene } from './scenes/JellyfishTankScene';
 import { FireflyFieldScene } from './scenes/FireflyFieldScene';
 import { TidePoolScene } from './scenes/TidePoolScene';
+import { FarmFieldScene } from './scenes/FarmFieldScene';
 import { SettingsUI, type SceneEntry } from './ui/SettingsUI';
 import { initFullscreenButton } from './ui/fullscreen';
 
@@ -45,6 +46,13 @@ const scenes: SceneEntry[] = [
     description: 'Sun-drenched rocky shore',
     icon: '\u{1F980}',
     create: (w, h) => new TidePoolScene(w, h),
+  },
+  {
+    id: 'farm-field',
+    name: 'Farm Field',
+    description: 'Pastoral dairy farm',
+    icon: '\u{1F404}',
+    create: (w, h) => new FarmFieldScene(w, h),
   },
 ];
 
