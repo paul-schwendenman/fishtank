@@ -257,95 +257,78 @@ function renderHead(
   ctx.translate(headX, headY);
   ctx.rotate(cow.headAngle * 0.5);
 
-  // Head shape — wider horizontal oval (blocky feel)
+  // Head shape — wider horizontal oval
   ctx.fillStyle = cow.variety.headColor;
   ctx.beginPath();
   ctx.ellipse(0, 0, headW, headH, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Muzzle — distinct boxy broad snout extending forward
-  const muzzleW = headW * 0.45;
-  const muzzleH = headH * 0.55;
-  const muzzleX = headW * 0.6;
-  const muzzleY = headH * 0.15;
-  ctx.fillStyle = lightenColor(cow.variety.headColor, 0.3);
+  // Muzzle — broad rounded area at front of head, not protruding far
+  const muzzleX = headW * 0.55;
+  const muzzleY = headH * 0.1;
+  const muzzleRx = headW * 0.35;
+  const muzzleRy = headH * 0.4;
+  ctx.fillStyle = lightenColor(cow.variety.headColor, 0.25);
   ctx.beginPath();
-  // Rounded rectangle for muzzle
-  const mr = muzzleH * 0.4;
-  ctx.moveTo(muzzleX - muzzleW + mr, muzzleY - muzzleH);
-  ctx.lineTo(muzzleX + muzzleW - mr, muzzleY - muzzleH);
-  ctx.arcTo(muzzleX + muzzleW, muzzleY - muzzleH, muzzleX + muzzleW, muzzleY - muzzleH + mr, mr);
-  ctx.lineTo(muzzleX + muzzleW, muzzleY + muzzleH - mr);
-  ctx.arcTo(muzzleX + muzzleW, muzzleY + muzzleH, muzzleX + muzzleW - mr, muzzleY + muzzleH, mr);
-  ctx.lineTo(muzzleX - muzzleW + mr, muzzleY + muzzleH);
-  ctx.arcTo(muzzleX - muzzleW, muzzleY + muzzleH, muzzleX - muzzleW, muzzleY + muzzleH - mr, mr);
-  ctx.lineTo(muzzleX - muzzleW, muzzleY - muzzleH + mr);
-  ctx.arcTo(muzzleX - muzzleW, muzzleY - muzzleH, muzzleX - muzzleW + mr, muzzleY - muzzleH, mr);
-  ctx.closePath();
+  ctx.ellipse(muzzleX, muzzleY, muzzleRx, muzzleRy, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Nostrils on muzzle
-  ctx.fillStyle = 'rgba(50, 30, 20, 0.6)';
+  // Nostril — single visible in side view, near front of muzzle
+  ctx.fillStyle = 'rgba(50, 30, 20, 0.5)';
   ctx.beginPath();
-  ctx.ellipse(muzzleX + muzzleW * 0.3, muzzleY - muzzleH * 0.15, 1.8, 1.2, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(muzzleX + muzzleW * 0.3, muzzleY + muzzleH * 0.3, 1.8, 1.2, 0, 0, Math.PI * 2);
+  ctx.ellipse(muzzleX + muzzleRx * 0.45, muzzleY + muzzleRy * 0.1, 1.5, 1.0, 0.2, 0, Math.PI * 2);
   ctx.fill();
 
-  // Eye — placed higher on head, slightly larger
+  // Eye — small, placed on upper half of head
   ctx.fillStyle = '#1a1208';
   ctx.beginPath();
-  ctx.ellipse(headW * 0.05, -headH * 0.35, headW * 0.1, headW * 0.08, 0, 0, Math.PI * 2);
+  ctx.arc(headW * 0.05, -headH * 0.25, headW * 0.07, 0, Math.PI * 2);
   ctx.fill();
   // Eye highlight
-  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
   ctx.beginPath();
-  ctx.arc(headW * 0.07, -headH * 0.38, headW * 0.04, 0, Math.PI * 2);
+  ctx.arc(headW * 0.07, -headH * 0.28, headW * 0.03, 0, Math.PI * 2);
   ctx.fill();
 
-  // Ear — triangular/pointed shape, angled back
-  const earFlick = cow.isEarFlicking ? 0.3 : 0;
-  const earBaseX = -headW * 0.2;
-  const earBaseY = -headH * 0.55;
+  // Ear — leaf-shaped, angled back
+  const earFlick = cow.isEarFlicking ? 0.25 : 0;
+  const earBaseX = -headW * 0.15;
+  const earBaseY = -headH * 0.5;
   ctx.save();
-  ctx.translate(earBaseX, earBaseY - earFlick * 3);
-  ctx.rotate(-0.6 - earFlick);
-  // Outer ear
+  ctx.translate(earBaseX, earBaseY - earFlick * 2.5);
+  ctx.rotate(-0.7 - earFlick);
+  // Outer ear — leaf/teardrop via quadratic curves
   ctx.fillStyle = cow.variety.headColor;
   ctx.beginPath();
-  ctx.moveTo(0, headH * 0.15);
-  ctx.lineTo(-headW * 0.08, -headH * 0.3);
-  ctx.lineTo(headW * 0.12, -headH * 0.15);
+  ctx.moveTo(0, headH * 0.1);
+  ctx.quadraticCurveTo(-headW * 0.1, -headH * 0.15, -headW * 0.03, -headH * 0.3);
+  ctx.quadraticCurveTo(headW * 0.05, -headH * 0.2, headW * 0.08, -headH * 0.05);
+  ctx.quadraticCurveTo(headW * 0.06, headH * 0.05, 0, headH * 0.1);
   ctx.closePath();
   ctx.fill();
   // Inner ear
-  ctx.fillStyle = 'rgba(200, 150, 130, 0.5)';
+  ctx.fillStyle = 'rgba(200, 150, 130, 0.4)';
   ctx.beginPath();
-  ctx.moveTo(0, headH * 0.08);
-  ctx.lineTo(-headW * 0.04, -headH * 0.18);
-  ctx.lineTo(headW * 0.07, -headH * 0.08);
+  ctx.moveTo(0, headH * 0.04);
+  ctx.quadraticCurveTo(-headW * 0.06, -headH * 0.1, -headW * 0.01, -headH * 0.2);
+  ctx.quadraticCurveTo(headW * 0.03, -headH * 0.12, headW * 0.05, -headH * 0.01);
+  ctx.quadraticCurveTo(headW * 0.03, headH * 0.03, 0, headH * 0.04);
   ctx.closePath();
   ctx.fill();
   ctx.restore();
 
-  // Horn nubs — small above ear area
+  // Horn nubs — small and subtle
   ctx.fillStyle = '#d4c8a0';
   ctx.beginPath();
-  ctx.ellipse(earBaseX + headW * 0.05, earBaseY - headH * 0.25 - earFlick * 3, headW * 0.04, headH * 0.12, -0.3, 0, Math.PI * 2);
-  ctx.fill();
-  // Horn highlight
-  ctx.fillStyle = 'rgba(255,255,240,0.3)';
-  ctx.beginPath();
-  ctx.ellipse(earBaseX + headW * 0.04, earBaseY - headH * 0.28 - earFlick * 3, headW * 0.02, headH * 0.06, -0.3, 0, Math.PI * 2);
+  ctx.ellipse(earBaseX + headW * 0.06, earBaseY - headH * 0.18 - earFlick * 2.5, headW * 0.03, headH * 0.08, -0.4, 0, Math.PI * 2);
   ctx.fill();
 
-  // Jaw/chewing animation
+  // Jaw/chewing animation — subtle shift of lower head area
   if (cow.jawPhase > 0) {
-    const chew = Math.sin(cow.jawPhase) * 1.5;
+    const chew = Math.sin(cow.jawPhase) * 1.0;
     ctx.fillStyle = cow.variety.headColor;
     ctx.beginPath();
-    ctx.ellipse(headW * 0.3, headH * 0.35 + chew, headW * 0.25, headH * 0.18, 0.1, 0, Math.PI * 2);
+    ctx.ellipse(headW * 0.2, headH * 0.3 + chew, headW * 0.2, headH * 0.14, 0.05, 0, Math.PI * 2);
     ctx.fill();
   }
 
