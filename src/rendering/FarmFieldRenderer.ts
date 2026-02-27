@@ -116,10 +116,10 @@ export class FarmFieldRenderer {
   }
 
   private generate(): void {
-    this.horizonY = this.height * 0.35;
-    this.backFieldY = this.height * 0.48;
-    this.fenceY = this.height * 0.65;
-    this.foreFieldY = this.height * 0.80;
+    this.horizonY = this.height * 0.15;
+    this.backFieldY = this.height * 0.45;
+    this.fenceY = this.height * 0.72;
+    this.foreFieldY = this.height * 0.90;
 
     this.generateClouds();
     this.generateHills();

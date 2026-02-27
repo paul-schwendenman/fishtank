@@ -1,7 +1,7 @@
 import type { Scene } from '../engine/GameLoop';
 import { Vector } from '../utils/Vector';
 import { randomRange } from '../utils/math';
-import { Cow } from '../entities/Cow';
+import { Cow, type CowState } from '../entities/Cow';
 import { COW_VARIETIES } from '../entities/CowVariety';
 import { Butterfly } from '../entities/Butterfly';
 import { FenceBird } from '../entities/FenceBird';
@@ -17,7 +17,7 @@ import {
   cowSeparation,
 } from '../behaviors/FarmSteering';
 
-const COW_COUNT = 6;
+const COW_COUNT = 18;
 const BUTTERFLY_COUNT = 3;
 const BIRD_COUNT = 2;
 const COW_SEPARATION_RADIUS = 80;
@@ -43,14 +43,34 @@ export class FarmFieldScene implements Scene {
   }
 
   private spawnCows(): void {
+    const initialStates: { state: CowState; timer: number }[] = [
+      { state: 'grazing', timer: randomRange(5, 15) },
+      { state: 'walking', timer: randomRange(4, 10) },
+      { state: 'grazing', timer: randomRange(8, 20) },
+      { state: 'standing', timer: randomRange(5, 12) },
+      { state: 'resting', timer: randomRange(15, 40) },
+      { state: 'grazing', timer: randomRange(3, 10) },
+      { state: 'headUp', timer: randomRange(3, 6) },
+      { state: 'grazing', timer: randomRange(10, 25) },
+      { state: 'resting', timer: randomRange(20, 50) },
+    ];
+
     let spawnDelay = 0;
     for (let i = 0; i < COW_COUNT; i++) {
       const variety = COW_VARIETIES[i % COW_VARIETIES.length]!;
       const x = randomRange(this.width * 0.1, this.width * 0.9);
       const y = this.environment.groundY(x);
       const cow = new Cow(variety, new Vector(x, y), spawnDelay);
-      // Assign depth based on y position relative to fence line
       cow.depth = 0;
+
+      // Diversify initial states
+      const init = initialStates[i % initialStates.length]!;
+      cow.state = init.state;
+      cow.stateTimer = init.timer;
+      if (init.state === 'resting') {
+        cow.lyingTransition = 1; // already lying
+      }
+
       spawnDelay += randomRange(0.3, 0.8);
       this.cows.push(cow);
     }
