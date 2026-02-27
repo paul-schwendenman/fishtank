@@ -355,9 +355,15 @@ export class FarmFieldRenderer {
     ctx.save();
     ctx.globalAlpha = 0.6;
     for (const tree of this.farTrees) {
+      // Draw trunk + canopy as a single path so alpha doesn't compound
+      const trunkWidth = tree.width * 0.3;
+      const trunkBottom = tree.y + 20;
+      const cx = tree.x;
+      const cy = tree.y - tree.height * 0.5;
       ctx.fillStyle = tree.color;
       ctx.beginPath();
-      ctx.ellipse(tree.x, tree.y - tree.height * 0.5, tree.width * 0.5, tree.height * 0.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, tree.width * 0.5, tree.height * 0.5, 0, 0, Math.PI * 2);
+      ctx.rect(cx - trunkWidth / 2, cy, trunkWidth, trunkBottom - cy);
       ctx.fill();
     }
     ctx.restore();
