@@ -15,8 +15,10 @@ export class FenceBird {
   tailBobPhase: number = 0;
 
   // Hopping
-  hopStart: number = 0;
-  hopEnd: number = 0;
+  hopStartX: number = 0;
+  hopStartY: number = 0;
+  hopEndX: number = 0;
+  hopEndY: number = 0;
   hopProgress: number = 0;
   hopDuration: number = 0.3;
 
@@ -39,7 +41,7 @@ export class FenceBird {
     this.perchTimer = randomRange(5, 15);
   }
 
-  update(dt: number, postPositions: { x: number; y: number }[]): void {
+  update(dt: number, postPositions: { x: number; y: number }[], fencePosts: { x: number; y: number }[]): void {
     this.tailBobPhase += dt * 3;
 
     switch (this.state) {
@@ -58,7 +60,7 @@ export class FenceBird {
             this.startFly(postPositions);
           } else if (roll < 0.6) {
             // Hop along rail
-            this.startHop();
+            this.startHop(fencePosts);
           } else {
             // Stay perching longer
             this.perchTimer = randomRange(5, 15);
@@ -70,14 +72,14 @@ export class FenceBird {
       case 'hopping':
         this.hopProgress += dt / this.hopDuration;
         if (this.hopProgress >= 1) {
-          this.x = this.hopEnd;
+          this.x = this.hopEndX;
+          this.y = this.hopEndY;
           this.state = 'perching';
           this.perchTimer = randomRange(3, 10);
         } else {
           const t = this.hopProgress;
-          this.x = this.hopStart + (this.hopEnd - this.hopStart) * t;
-          // Arc upward
-          this.y = this.y; // y stays at perch level
+          this.x = this.hopStartX + (this.hopEndX - this.hopStartX) * t;
+          this.y = this.hopStartY + (this.hopEndY - this.hopStartY) * t;
         }
         break;
 
@@ -102,11 +104,34 @@ export class FenceBird {
     }
   }
 
-  private startHop(): void {
+  /** Compute bird-center y for perching on the top rail at a given x */
+  private getRailPerchY(x: number, fencePosts: { x: number; y: number }[]): number {
+    // Find the two posts this x is between
+    for (let i = 0; i < fencePosts.length - 1; i++) {
+      const a = fencePosts[i]!;
+      const b = fencePosts[i + 1]!;
+      if (x >= a.x && x <= b.x) {
+        const t = (x - a.x) / (b.x - a.x);
+        const groundY = a.y + (b.y - a.y) * t;
+        // Top rail center at groundY - 24, lineWidth 3 so top surface ~-25.5
+        // Bird feet at +9 from center, so center = railTop - 9
+        return groundY - 35;
+      }
+    }
+    // Past the ends — use nearest post
+    const first = fencePosts[0]!;
+    const last = fencePosts[fencePosts.length - 1]!;
+    const groundY = x < first.x ? first.y : last.y;
+    return groundY - 35;
+  }
+
+  private startHop(fencePosts: { x: number; y: number }[]): void {
     this.state = 'hopping';
-    this.hopStart = this.x;
+    this.hopStartX = this.x;
+    this.hopStartY = this.y;
     const dir = this.facingRight ? 1 : -1;
-    this.hopEnd = this.x + dir * randomRange(15, 30);
+    this.hopEndX = this.x + dir * randomRange(15, 30);
+    this.hopEndY = this.getRailPerchY(this.hopEndX, fencePosts);
     this.hopProgress = 0;
     this.hopDuration = randomRange(0.2, 0.4);
   }

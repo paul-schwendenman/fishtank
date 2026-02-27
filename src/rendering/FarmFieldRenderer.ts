@@ -86,7 +86,7 @@ export class FarmFieldRenderer {
   private hillLayers: HillLayer[] = [];
   private farTrees: FarTree[] = [];
   midTrees: MidTree[] = [];
-  private fencePosts: FencePost[] = [];
+  fencePosts: FencePost[] = [];
   private wildflowers: Wildflower[] = [];
   private foreGrass: GrassBlade[] = [];
   private pond: PondData | null = null;
@@ -233,7 +233,7 @@ export class FarmFieldRenderer {
       const x = i * postSpacing;
       const y = this.groundY(x);
       this.fencePosts.push({ x, y });
-      this.postPositions.push({ x, y: y - 25 }); // top of post for birds
+      this.postPositions.push({ x, y: y - 41 }); // feet at +9 from center, landing on post cap top at y-32
     }
   }
 

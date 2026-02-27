@@ -205,7 +205,7 @@ export class FarmFieldScene implements Scene {
 
     // Update birds
     for (const bird of this.birds) {
-      bird.update(dt, this.environment.postPositions);
+      bird.update(dt, this.environment.postPositions, this.environment.fencePosts);
     }
 
     // Update swallow
