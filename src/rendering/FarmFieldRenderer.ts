@@ -23,7 +23,7 @@ interface FarTree {
   color: string;
 }
 
-interface MidTree {
+export interface MidTree {
   x: number;
   y: number;
   canopyWidth: number;
@@ -85,7 +85,7 @@ export class FarmFieldRenderer {
   private clouds: Cloud[] = [];
   private hillLayers: HillLayer[] = [];
   private farTrees: FarTree[] = [];
-  private midTrees: MidTree[] = [];
+  midTrees: MidTree[] = [];
   private fencePosts: FencePost[] = [];
   private wildflowers: Wildflower[] = [];
   private foreGrass: GrassBlade[] = [];
@@ -355,41 +355,39 @@ export class FarmFieldRenderer {
     ctx.fillRect(0, this.horizonY, this.width, this.backFieldY - this.horizonY);
   }
 
-  renderMidTrees(ctx: CanvasRenderingContext2D): void {
-    for (const tree of this.midTrees) {
-      // Trunk
-      ctx.fillStyle = tree.trunkColor;
-      ctx.fillRect(
-        tree.x - tree.trunkWidth / 2,
-        tree.y - tree.trunkHeight,
-        tree.trunkWidth,
-        tree.trunkHeight,
-      );
+  renderMidTree(ctx: CanvasRenderingContext2D, tree: MidTree): void {
+    // Trunk
+    ctx.fillStyle = tree.trunkColor;
+    ctx.fillRect(
+      tree.x - tree.trunkWidth / 2,
+      tree.y - tree.trunkHeight,
+      tree.trunkWidth,
+      tree.trunkHeight,
+    );
 
-      // Canopy — overlapping circles
-      ctx.fillStyle = tree.leafColor;
-      const cx = tree.x;
-      const cy = tree.y - tree.trunkHeight - tree.canopyHeight * 0.3;
+    // Canopy — overlapping circles
+    ctx.fillStyle = tree.leafColor;
+    const cx = tree.x;
+    const cy = tree.y - tree.trunkHeight - tree.canopyHeight * 0.3;
 
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, tree.canopyWidth * 0.5, tree.canopyHeight * 0.45, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(cx - tree.canopyWidth * 0.25, cy + tree.canopyHeight * 0.1, tree.canopyWidth * 0.35, tree.canopyHeight * 0.35, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(cx + tree.canopyWidth * 0.25, cy + tree.canopyHeight * 0.05, tree.canopyWidth * 0.35, tree.canopyHeight * 0.38, 0, 0, Math.PI * 2);
-      ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, tree.canopyWidth * 0.5, tree.canopyHeight * 0.45, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx - tree.canopyWidth * 0.25, cy + tree.canopyHeight * 0.1, tree.canopyWidth * 0.35, tree.canopyHeight * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx + tree.canopyWidth * 0.25, cy + tree.canopyHeight * 0.05, tree.canopyWidth * 0.35, tree.canopyHeight * 0.38, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-      // Shadow on grass
-      ctx.save();
-      ctx.globalAlpha = 0.15;
-      ctx.fillStyle = '#000';
-      ctx.beginPath();
-      ctx.ellipse(tree.x + 10, tree.y + 3, tree.canopyWidth * 0.5, 8, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
+    // Shadow on grass
+    ctx.save();
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(tree.x + 10, tree.y + 3, tree.canopyWidth * 0.5, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   renderMidField(ctx: CanvasRenderingContext2D): void {
@@ -529,12 +527,21 @@ export class FarmFieldRenderer {
   }
 
   renderForeField(ctx: CanvasRenderingContext2D, time: number): void {
-    // Darker foreground green
+    // Darker foreground green — follows groundY contour
     const grad = ctx.createLinearGradient(0, this.fenceY, 0, this.height);
     grad.addColorStop(0, '#408838');
     grad.addColorStop(1, '#306828');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, this.fenceY, this.width, this.height - this.fenceY);
+    ctx.beginPath();
+    ctx.moveTo(0, this.height);
+    const steps = Math.ceil(this.width / 4);
+    for (let i = 0; i <= steps; i++) {
+      const x = (i / steps) * this.width;
+      ctx.lineTo(x, this.groundY(x));
+    }
+    ctx.lineTo(this.width, this.height);
+    ctx.closePath();
+    ctx.fill();
 
     // Wildflowers
     for (const flower of this.wildflowers) {

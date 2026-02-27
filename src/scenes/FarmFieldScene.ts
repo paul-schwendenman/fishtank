@@ -6,7 +6,7 @@ import { COW_VARIETIES } from '../entities/CowVariety';
 import { Butterfly } from '../entities/Butterfly';
 import { FenceBird } from '../entities/FenceBird';
 import { Swallow } from '../entities/Swallow';
-import { FarmFieldRenderer } from '../rendering/FarmFieldRenderer';
+import { FarmFieldRenderer, type MidTree } from '../rendering/FarmFieldRenderer';
 import { renderCow } from '../rendering/CowRenderer';
 import { renderButterfly } from '../rendering/ButterflyRenderer';
 import { renderFenceBird } from '../rendering/FenceBirdRenderer';
@@ -71,34 +71,25 @@ export class FarmFieldScene implements Scene {
         cow.lyingTransition = 1; // already lying
       }
 
-      spawnDelay += randomRange(0.3, 0.8);
+      spawnDelay += randomRange(0.1, 0.3);
       this.cows.push(cow);
     }
     this.assignCowDepths();
   }
 
   private assignCowDepths(): void {
+    const fieldTop = this.environment.horizonY + (this.environment.fenceY - this.environment.horizonY) * 0.15;
+
     for (const cow of this.cows) {
-      // Place roughly half in the back field, half in the fore field
-      if (Math.random() < 0.35) {
-        // Back cow — place in back field area
-        const x = cow.position.x;
-        const backY = randomRange(
-          this.environment.horizonY + (this.environment.fenceY - this.environment.horizonY) * 0.2,
-          this.environment.horizonY + (this.environment.fenceY - this.environment.horizonY) * 0.5,
-        );
-        cow.position = new Vector(x, backY);
-        cow.depth = 0.7 + Math.random() * 0.3; // far away
-      } else {
-        // Front cow — place in fore field area
-        const x = cow.position.x;
-        const foreY = randomRange(
-          this.environment.fenceY + 15,
-          this.environment.fenceY + (this.height - this.environment.fenceY) * 0.5,
-        );
-        cow.position = new Vector(x, foreY);
-        cow.depth = Math.random() * 0.4; // closer
-      }
+      const x = cow.position.x;
+      const fieldBottom = this.environment.groundY(x) - 15;
+      // Bias toward back (fieldTop) — exponent >1 clusters toward 0 (top/back)
+      const t = Math.pow(Math.random(), 2);
+      const y = fieldTop + t * (fieldBottom - fieldTop);
+      cow.position = new Vector(x, y);
+      // Depth based on y position within the field (higher = further away)
+      const range = fieldBottom - fieldTop;
+      cow.depth = range > 0 ? 1 - (y - fieldTop) / range : 0.5;
     }
   }
 
@@ -158,11 +149,12 @@ export class FarmFieldScene implements Scene {
         }
       }
 
-      // Snap front cows to ground terrain
-      if (cow.depth < 0.5) {
-        const baseY = this.environment.fenceY + 15 + (1 - cow.depth) * (this.height - this.environment.fenceY) * 0.3;
-        const terrainY = baseY + (this.environment.groundY(cow.position.x) - this.environment.fenceY);
-        cow.position = new Vector(cow.position.x, terrainY);
+      // Keep cows within the field (behind fence contour)
+      const fieldTop = this.environment.horizonY + (this.environment.fenceY - this.environment.horizonY) * 0.15;
+      const fieldBottom = this.environment.groundY(cow.position.x) - 15;
+      const clampedY = Math.max(fieldTop, Math.min(fieldBottom, cow.position.y));
+      if (clampedY !== cow.position.y) {
+        cow.position = new Vector(cow.position.x, clampedY);
       }
     }
 
@@ -231,33 +223,35 @@ export class FarmFieldScene implements Scene {
     // 5. Back field
     this.environment.renderBackField(ctx);
 
-    // 5b. Mid trees
-    this.environment.renderMidTrees(ctx);
-
-    // 6. Back cows (depth > 0.5)
-    const backCows = this.cows.filter(c => c.depth > 0.5);
-    backCows.sort((a, b) => b.depth - a.depth);
-    for (const cow of backCows) {
-      renderCow(ctx, cow, this.time);
-    }
-
-    // 7. Mid field
+    // 6. Mid field
     this.environment.renderMidField(ctx);
 
-    // 8. Pond
-    this.environment.renderPond(ctx, this.time);
-
-    // 9. Fence
-    this.environment.renderFence(ctx);
-
-    // 10. Main cows (depth <= 0.5), sorted by depth
-    const frontCows = this.cows.filter(c => c.depth <= 0.5);
-    frontCows.sort((a, b) => b.depth - a.depth);
-    for (const cow of frontCows) {
-      renderCow(ctx, cow, this.time);
+    // 7. All cows + mid trees + pond interleaved by y-position
+    const fieldItems: { y: number; type: 'cow' | 'tree' | 'pond'; cow?: Cow; tree?: MidTree }[] = [];
+    for (const cow of this.cows) {
+      fieldItems.push({ y: cow.position.y, type: 'cow', cow });
+    }
+    for (const tree of this.environment.midTrees) {
+      fieldItems.push({ y: tree.y, type: 'tree', tree });
+    }
+    if (this.environment.pondBounds) {
+      fieldItems.push({ y: this.environment.pondBounds.cy, type: 'pond' });
+    }
+    fieldItems.sort((a, b) => a.y - b.y);
+    for (const item of fieldItems) {
+      if (item.type === 'tree') {
+        this.environment.renderMidTree(ctx, item.tree!);
+      } else if (item.type === 'pond') {
+        this.environment.renderPond(ctx, this.time);
+      } else {
+        renderCow(ctx, item.cow!, this.time);
+      }
     }
 
-    // 11. Fore field + wildflowers
+    // 8. Fence
+    this.environment.renderFence(ctx);
+
+    // 9. Fore field + wildflowers
     this.environment.renderForeField(ctx, this.time);
 
     // 12. Birds + butterflies + swallow

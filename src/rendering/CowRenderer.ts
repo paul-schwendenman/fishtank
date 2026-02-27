@@ -5,8 +5,8 @@ export function renderCow(ctx: CanvasRenderingContext2D, cow: Cow, time: number)
   if (cow.spawnOpacity <= 0) return;
 
   // Depth-based scaling and fading
-  const depthScale = lerp(1.0, 0.55, cow.depth);
-  const depthAlpha = lerp(1.0, 0.6, cow.depth);
+  const depthScale = lerp(1.0, 0.45, cow.depth);
+  const depthAlpha = lerp(1.0, 0.7, cow.depth);
 
   ctx.save();
   ctx.globalAlpha = Math.min(cow.spawnOpacity, 1) * depthAlpha;
