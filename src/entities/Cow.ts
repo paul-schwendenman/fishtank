@@ -51,8 +51,8 @@ export class Cow {
     this.spawnOpacity = -spawnDelay;
     this.depth = 0;
 
-    this.bodyWidth = 50 * variety.sizeMult;
-    this.bodyHeight = 30 * variety.sizeMult;
+    this.bodyWidth = 55 * variety.sizeMult;
+    this.bodyHeight = 28 * variety.sizeMult;
 
     this.stateTimer = randomRange(20, 40);
     this.tailPhase = randomRange(0, Math.PI * 2);
