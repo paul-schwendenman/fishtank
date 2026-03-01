@@ -5,6 +5,7 @@ import { JellyfishTankScene } from './scenes/JellyfishTankScene';
 import { FireflyFieldScene } from './scenes/FireflyFieldScene';
 import { TidePoolScene } from './scenes/TidePoolScene';
 import { FarmFieldScene } from './scenes/FarmFieldScene';
+import { BirdFeederScene } from './scenes/BirdFeederScene';
 import { SettingsUI, type SceneEntry } from './ui/SettingsUI';
 import { initFullscreenButton } from './ui/fullscreen';
 
@@ -53,6 +54,13 @@ const scenes: SceneEntry[] = [
     description: 'Pastoral dairy farm',
     icon: '\u{1F404}',
     create: (w, h) => new FarmFieldScene(w, h),
+  },
+  {
+    id: 'bird-feeder',
+    name: 'Bird Feeder',
+    description: 'Backyard bird watching',
+    icon: '\u{1F426}',
+    create: (w, h) => new BirdFeederScene(w, h),
   },
 ];
 

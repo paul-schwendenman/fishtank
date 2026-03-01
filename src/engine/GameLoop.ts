@@ -2,6 +2,7 @@ export interface Scene {
   update(dt: number): void;
   render(ctx: CanvasRenderingContext2D): void;
   resize(width: number, height: number): void;
+  destroy?(): void;
 }
 
 export class GameLoop {
@@ -15,6 +16,7 @@ export class GameLoop {
   ) {}
 
   setScene(scene: Scene): void {
+    this.scene.destroy?.();
     this.scene = scene;
   }
 
