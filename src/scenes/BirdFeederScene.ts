@@ -304,10 +304,13 @@ export class BirdFeederScene implements Scene {
     // 4. Back lawn
     this.environment.renderBackLawn(ctx);
 
-    // 5. Tree trunks
+    // 5. Fence (behind trees and feeders)
+    this.environment.renderFence(ctx);
+
+    // 6. Tree trunks (in front of fence)
     this.environment.renderTreeTrunks(ctx);
 
-    // 6. Trunk/branch birds (behind feeders)
+    // 7. Trunk/branch birds
     const trunkBirds = this.birds.filter(b =>
       !b.isFlying && b.targetPerch &&
       (b.targetPerch.type === 'trunk' || b.targetPerch.type === 'branch'),
@@ -316,10 +319,10 @@ export class BirdFeederScene implements Scene {
       renderBird(ctx, bird, this.time);
     }
 
-    // 7. Feeders
+    // 8. Feeders
     this.environment.renderFeeders(ctx, this.time);
 
-    // 8. Feeder birds
+    // 9. Feeder birds
     const feederBirds = this.birds.filter(b =>
       !b.isFlying && b.targetPerch &&
       (b.targetPerch.type === 'feeder-tube' ||
@@ -332,9 +335,6 @@ export class BirdFeederScene implements Scene {
     for (const bird of feederBirds) {
       renderBird(ctx, bird, this.time);
     }
-
-    // 9. Fence
-    this.environment.renderFence(ctx);
 
     // 10. Ground (below ground birds)
     this.environment.renderGround(ctx);

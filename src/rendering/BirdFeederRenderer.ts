@@ -148,21 +148,23 @@ export class BirdFeederRenderer {
   private generateTrees(): void {
     const treeBottomY = this.groundY;
 
-    // Left tree at ~20%
+    // Left tree at ~18% — large backyard tree
     const lx = this.width * 0.18;
-    const lTrunkW = this.width * 0.025;
-    const lTrunkTop = this.lawnTopY - this.height * 0.05;
-    const lCanopyW = this.width * 0.14;
-    const lCanopyH = this.height * 0.22;
-    const lCanopyY = lTrunkTop - lCanopyH * 0.35;
+    const lTrunkW = Math.max(5, this.width * 0.007); // narrow trunk
+    // Canopy is the dominant visual — wide and tall
+    const lCanopyW = this.width * 0.18;
+    const lCanopyH = this.height * 0.30;
+    // Canopy center sits above the fence, trunk visible below it
+    const lCanopyCenterY = this.fenceY - this.height * 0.18;
+    const lTrunkTop = lCanopyCenterY + lCanopyH * 0.15; // trunk disappears into canopy
 
     const leftBranches = [
-      // Branch for jelly station — extends to the right
-      { x: lx + lTrunkW * 0.3, y: this.fenceY - this.height * 0.12, endX: lx + this.width * 0.08, endY: this.fenceY - this.height * 0.14, width: 4 },
+      // Branch for jelly station — extends to the right from canopy area
+      { x: lx, y: this.fenceY - this.height * 0.10, endX: lx + this.width * 0.08, endY: this.fenceY - this.height * 0.12, width: 7 },
       // Upper branch left
-      { x: lx - lTrunkW * 0.3, y: lTrunkTop + this.height * 0.06, endX: lx - this.width * 0.06, endY: lTrunkTop + this.height * 0.03, width: 3 },
+      { x: lx, y: lCanopyCenterY + lCanopyH * 0.08, endX: lx - this.width * 0.07, endY: lCanopyCenterY + lCanopyH * 0.02, width: 6 },
       // Upper branch right
-      { x: lx + lTrunkW * 0.3, y: lTrunkTop + this.height * 0.04, endX: lx + this.width * 0.06, endY: lTrunkTop + this.height * 0.01, width: 3 },
+      { x: lx, y: lCanopyCenterY + lCanopyH * 0.02, endX: lx + this.width * 0.06, endY: lCanopyCenterY - lCanopyH * 0.05, width: 5 },
     ];
 
     this.leftTree = {
@@ -172,28 +174,28 @@ export class BirdFeederRenderer {
       trunkBottom: treeBottomY,
       trunkColor: '#6a5a45',
       canopyX: lx,
-      canopyY: lCanopyY,
+      canopyY: lCanopyCenterY,
       canopyW: lCanopyW,
       canopyH: lCanopyH,
       leafColor: '#3a7a30',
       branches: leftBranches,
     };
 
-    // Right tree at ~80%
+    // Right tree at ~82% — slightly smaller
     const rx = this.width * 0.82;
-    const rTrunkW = this.width * 0.022;
-    const rTrunkTop = this.lawnTopY - this.height * 0.03;
-    const rCanopyW = this.width * 0.12;
-    const rCanopyH = this.height * 0.20;
-    const rCanopyY = rTrunkTop - rCanopyH * 0.35;
+    const rTrunkW = Math.max(4, this.width * 0.006);
+    const rCanopyW = this.width * 0.15;
+    const rCanopyH = this.height * 0.26;
+    const rCanopyCenterY = this.fenceY - this.height * 0.15;
+    const rTrunkTop = rCanopyCenterY + rCanopyH * 0.15;
 
     const rightBranches = [
       // Branch left side (perch points)
-      { x: rx - rTrunkW * 0.3, y: rTrunkTop + this.height * 0.08, endX: rx - this.width * 0.07, endY: rTrunkTop + this.height * 0.06, width: 3 },
+      { x: rx, y: rCanopyCenterY + rCanopyH * 0.12, endX: rx - this.width * 0.07, endY: rCanopyCenterY + rCanopyH * 0.06, width: 6 },
       // Branch right side
-      { x: rx + rTrunkW * 0.3, y: rTrunkTop + this.height * 0.05, endX: rx + this.width * 0.05, endY: rTrunkTop + this.height * 0.02, width: 3 },
+      { x: rx, y: rCanopyCenterY + rCanopyH * 0.05, endX: rx + this.width * 0.05, endY: rCanopyCenterY - rCanopyH * 0.02, width: 5 },
       // Lower branch for perching
-      { x: rx - rTrunkW * 0.3, y: this.fenceY - this.height * 0.06, endX: rx - this.width * 0.06, endY: this.fenceY - this.height * 0.08, width: 3 },
+      { x: rx, y: this.fenceY - this.height * 0.04, endX: rx - this.width * 0.06, endY: this.fenceY - this.height * 0.07, width: 6 },
     ];
 
     this.rightTree = {
@@ -203,7 +205,7 @@ export class BirdFeederRenderer {
       trunkBottom: treeBottomY,
       trunkColor: '#5a4a3a',
       canopyX: rx,
-      canopyY: rCanopyY,
+      canopyY: rCanopyCenterY,
       canopyW: rCanopyW,
       canopyH: rCanopyH,
       leafColor: '#358a28',
@@ -537,37 +539,53 @@ export class BirdFeederRenderer {
 
   renderTreeTrunks(ctx: CanvasRenderingContext2D): void {
     for (const tree of [this.leftTree, this.rightTree]) {
-      // Trunk
+      // Trunk — slight taper (wider at base)
+      const baseHalfW = tree.trunkWidth * 1.3;
+      const topHalfW = tree.trunkWidth * 0.8;
       ctx.fillStyle = tree.trunkColor;
-      ctx.fillRect(
-        tree.x - tree.trunkWidth,
-        tree.trunkTop,
-        tree.trunkWidth * 2,
-        tree.trunkBottom - tree.trunkTop,
-      );
+      ctx.beginPath();
+      ctx.moveTo(tree.x - topHalfW, tree.trunkTop);
+      ctx.lineTo(tree.x + topHalfW, tree.trunkTop);
+      ctx.lineTo(tree.x + baseHalfW, tree.trunkBottom);
+      ctx.lineTo(tree.x - baseHalfW, tree.trunkBottom);
+      ctx.closePath();
+      ctx.fill();
 
       // Bark texture
       ctx.save();
-      ctx.globalAlpha = 0.12;
+      ctx.globalAlpha = 0.15;
       ctx.strokeStyle = '#3a2a1a';
       ctx.lineWidth = 1;
-      for (let y = tree.trunkTop + 5; y < tree.trunkBottom; y += 8) {
+      for (let y = tree.trunkTop + 8; y < tree.trunkBottom; y += 10) {
+        const t = (y - tree.trunkTop) / (tree.trunkBottom - tree.trunkTop);
+        const hw = topHalfW + (baseHalfW - topHalfW) * t;
         ctx.beginPath();
-        ctx.moveTo(tree.x - tree.trunkWidth * 0.8, y + randomRange(-1, 1));
-        ctx.lineTo(tree.x + tree.trunkWidth * 0.8, y + randomRange(-1, 1));
+        ctx.moveTo(tree.x - hw * 0.7, y);
+        ctx.lineTo(tree.x + hw * 0.7, y);
         ctx.stroke();
       }
       ctx.restore();
 
-      // Branches
-      ctx.strokeStyle = tree.trunkColor;
-      ctx.lineCap = 'round';
+      // Branches — draw with taper using a filled quad
       for (const branch of tree.branches) {
-        ctx.lineWidth = branch.width;
+        const dx = branch.endX - branch.x;
+        const dy = branch.endY - branch.y;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        if (len < 1) continue;
+        // Perpendicular direction
+        const nx = -dy / len;
+        const ny = dx / len;
+        const startW = branch.width * 0.5;
+        const endW = branch.width * 0.2;
+
+        ctx.fillStyle = tree.trunkColor;
         ctx.beginPath();
-        ctx.moveTo(branch.x, branch.y);
-        ctx.lineTo(branch.endX, branch.endY);
-        ctx.stroke();
+        ctx.moveTo(branch.x + nx * startW, branch.y + ny * startW);
+        ctx.lineTo(branch.endX + nx * endW, branch.endY + ny * endW);
+        ctx.lineTo(branch.endX - nx * endW, branch.endY - ny * endW);
+        ctx.lineTo(branch.x - nx * startW, branch.y - ny * startW);
+        ctx.closePath();
+        ctx.fill();
       }
     }
   }
@@ -820,12 +838,13 @@ export class BirdFeederRenderer {
   }
 
   renderGround(ctx: CanvasRenderingContext2D): void {
-    // Ground area below feeders
-    const grad = ctx.createLinearGradient(0, this.groundY - 5, 0, this.foreGrassY);
+    // Ground area below feeders — extends all the way to canvas bottom
+    const grad = ctx.createLinearGradient(0, this.groundY - 5, 0, this.height);
     grad.addColorStop(0, '#509840');
-    grad.addColorStop(1, '#408830');
+    grad.addColorStop(0.5, '#408830');
+    grad.addColorStop(1, '#387828');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, this.groundY - 5, this.width, this.foreGrassY - this.groundY + 5);
+    ctx.fillRect(0, this.groundY - 5, this.width, this.height - this.groundY + 5);
 
     // Scattered seed
     for (const seed of this.groundSeeds) {
