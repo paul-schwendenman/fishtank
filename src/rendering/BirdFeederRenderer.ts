@@ -366,18 +366,19 @@ export class BirdFeederRenderer {
     });
 
     // Bird bath — 3 rim spots + 1 water
+    const bathBowlY = this.bathY - 32 - 8 * 0.3;
     for (let i = 0; i < 3; i++) {
       const angle = -Math.PI * 0.3 + i * Math.PI * 0.3;
       this.perchPoints.push({
-        x: this.bathX + Math.cos(angle) * 18,
-        y: this.bathY - 18 + Math.sin(angle) * 4,
+        x: this.bathX + Math.cos(angle) * 28,
+        y: bathBowlY + Math.sin(angle) * 5,
         type: 'bath-rim',
         occupied: false,
       });
     }
     this.perchPoints.push({
       x: this.bathX,
-      y: this.bathY - 14,
+      y: bathBowlY + 2,
       type: 'bath-water',
       occupied: false,
     });
@@ -761,56 +762,61 @@ export class BirdFeederRenderer {
   private renderBirdBath(ctx: CanvasRenderingContext2D, time: number): void {
     const x = this.bathX;
     const y = this.bathY;
+    const bowlRx = 30;
+    const bowlRy = 8;
+    const pedestalH = 32;
+    const bowlY = y - pedestalH - bowlRy * 0.3;
 
     // Pedestal
     ctx.fillStyle = '#a09888';
     ctx.beginPath();
-    ctx.moveTo(x - 6, y);
-    ctx.lineTo(x + 6, y);
-    ctx.lineTo(x + 4, y - 12);
-    ctx.lineTo(x - 4, y - 12);
+    ctx.moveTo(x - 9, y);
+    ctx.lineTo(x + 9, y);
+    ctx.lineTo(x + 6, y - pedestalH);
+    ctx.lineTo(x - 6, y - pedestalH);
     ctx.closePath();
     ctx.fill();
 
     // Pedestal base
     ctx.fillStyle = '#98908a';
     ctx.beginPath();
-    ctx.ellipse(x, y, 10, 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, y, 14, 4, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Bowl
+    // Bowl — bottom half (visible stone)
     ctx.fillStyle = '#a09888';
     ctx.beginPath();
-    ctx.ellipse(x, y - 16, 20, 6, 0, 0, Math.PI);
+    ctx.ellipse(x, bowlY, bowlRx, bowlRy, 0, 0, Math.PI);
     ctx.fill();
+    // Bowl — top rim edge
     ctx.beginPath();
-    ctx.ellipse(x, y - 16, 20, 4, 0, Math.PI, Math.PI * 2);
+    ctx.ellipse(x, bowlY, bowlRx, bowlRy * 0.6, 0, Math.PI, Math.PI * 2);
     ctx.fill();
 
     // Water surface
     ctx.save();
     ctx.beginPath();
-    ctx.ellipse(x, y - 16, 18, 4, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, bowlY, bowlRx - 3, bowlRy * 0.55, 0, 0, Math.PI * 2);
     ctx.clip();
 
     ctx.fillStyle = '#6a9ab0';
-    ctx.fillRect(x - 18, y - 20, 36, 8);
+    ctx.fillRect(x - bowlRx, bowlY - bowlRy, bowlRx * 2, bowlRy * 2);
 
     // Shimmer
     ctx.globalAlpha = 0.15;
     ctx.fillStyle = '#b0d8f0';
-    const shimmerX = x + Math.sin(time * 0.8) * 8;
+    const shimmerX = x + Math.sin(time * 0.8) * 10;
     ctx.beginPath();
-    ctx.ellipse(shimmerX, y - 17, 6, 2, 0.3, 0, Math.PI * 2);
+    ctx.ellipse(shimmerX, bowlY - 1, 8, 3, 0.3, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
 
     // Bowl rim
     ctx.strokeStyle = '#908880';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.ellipse(x, y - 16, 20, 4, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, bowlY, bowlRx, bowlRy * 0.6, 0, 0, Math.PI * 2);
     ctx.stroke();
   }
 
