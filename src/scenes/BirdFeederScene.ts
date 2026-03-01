@@ -295,17 +295,17 @@ export class BirdFeederScene implements Scene {
     // 1. Sky
     this.environment.renderSky(ctx);
 
-    // 2. Clouds
-    this.environment.renderClouds(ctx);
-
-    // 3. Distant treeline
+    // 2. Neighbor trees peeking above fence
     this.environment.renderTreeline(ctx);
 
-    // 4. Back lawn
-    this.environment.renderBackLawn(ctx);
+    // 3. Clouds (in front of treeline)
+    this.environment.renderClouds(ctx);
 
-    // 5. Fence (behind trees and feeders)
+    // 4. Privacy fence
     this.environment.renderFence(ctx);
+
+    // 5. Back lawn (below fence)
+    this.environment.renderBackLawn(ctx);
 
     // 6. Tree trunks (in front of fence)
     this.environment.renderTreeTrunks(ctx);

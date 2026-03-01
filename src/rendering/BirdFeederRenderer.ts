@@ -61,9 +61,8 @@ export class BirdFeederRenderer {
   // Key y-coordinates
   groundY: number = 0;
   private horizonY: number = 0;
-  private treelineY: number = 0;
-  private lawnTopY: number = 0;
-  private fenceY: number = 0;
+  private fenceTopY: number = 0;
+  private fenceBottomY: number = 0;
   private foreGrassY: number = 0;
 
   // Pre-generated data
@@ -103,12 +102,12 @@ export class BirdFeederRenderer {
   }
 
   private generate(): void {
-    this.horizonY = this.height * 0.12;
-    this.treelineY = this.height * 0.16;
-    this.lawnTopY = this.height * 0.25;
-    this.fenceY = this.height * 0.52;
-    this.groundY = this.height * 0.68;
-    this.foreGrassY = this.height * 0.88;
+    // Compact backyard layout — everything close and cozy
+    this.horizonY = this.height * 0.08;
+    this.fenceTopY = this.height * 0.12;  // privacy fence top
+    this.fenceBottomY = this.height * 0.42; // privacy fence bottom / lawn starts
+    this.groundY = this.height * 0.60;     // feeder ground level
+    this.foreGrassY = this.height * 0.85;
 
     this.generateClouds();
     this.generateTrees();
@@ -122,7 +121,7 @@ export class BirdFeederRenderer {
 
   private generateClouds(): void {
     this.clouds = [];
-    const count = randomInt(3, 5);
+    const count = randomInt(2, 4);
     for (let i = 0; i < count; i++) {
       const bumps: Cloud['bumps'] = [];
       const bumpCount = randomInt(3, 5);
@@ -135,11 +134,11 @@ export class BirdFeederRenderer {
       }
       this.clouds.push({
         x: randomRange(0, this.width),
-        y: randomRange(this.height * 0.03, this.horizonY * 0.8),
-        width: randomRange(80, 160),
-        height: randomRange(25, 50),
+        y: randomRange(this.height * 0.01, this.horizonY * 0.9),
+        width: randomRange(60, 120),
+        height: randomRange(15, 30),
         speed: randomRange(2, 4),
-        opacity: randomRange(0.4, 0.7),
+        opacity: randomRange(0.3, 0.6),
         bumps,
       });
     }
@@ -148,23 +147,22 @@ export class BirdFeederRenderer {
   private generateTrees(): void {
     const treeBottomY = this.groundY;
 
-    // Left tree at ~18% — large backyard tree
-    const lx = this.width * 0.18;
-    const lTrunkW = Math.max(5, this.width * 0.007); // narrow trunk
-    // Canopy is the dominant visual — wide and tall
-    const lCanopyW = this.width * 0.18;
-    const lCanopyH = this.height * 0.30;
-    // Canopy center sits above the fence, trunk visible below it
-    const lCanopyCenterY = this.fenceY - this.height * 0.18;
-    const lTrunkTop = lCanopyCenterY + lCanopyH * 0.15; // trunk disappears into canopy
+    // Left tree at ~15% — big backyard tree, canopy rises above fence
+    const lx = this.width * 0.15;
+    const lTrunkW = Math.max(5, this.width * 0.008);
+    const lCanopyW = this.width * 0.20;
+    const lCanopyH = this.height * 0.32;
+    // Canopy center straddles the fence top — upper canopy above fence, lower overlaps
+    const lCanopyCenterY = this.fenceTopY + this.height * 0.05;
+    const lTrunkTop = lCanopyCenterY + lCanopyH * 0.2; // trunk starts inside canopy
 
     const leftBranches = [
-      // Branch for jelly station — extends to the right from canopy area
-      { x: lx, y: this.fenceY - this.height * 0.10, endX: lx + this.width * 0.08, endY: this.fenceY - this.height * 0.12, width: 7 },
-      // Upper branch left
-      { x: lx, y: lCanopyCenterY + lCanopyH * 0.08, endX: lx - this.width * 0.07, endY: lCanopyCenterY + lCanopyH * 0.02, width: 6 },
+      // Branch for jelly station — extends right, below canopy center
+      { x: lx, y: this.fenceBottomY + this.height * 0.02, endX: lx + this.width * 0.10, endY: this.fenceBottomY - this.height * 0.01, width: 8 },
+      // Upper branch left — within canopy
+      { x: lx, y: lCanopyCenterY + lCanopyH * 0.06, endX: lx - this.width * 0.08, endY: lCanopyCenterY + lCanopyH * 0.0, width: 7 },
       // Upper branch right
-      { x: lx, y: lCanopyCenterY + lCanopyH * 0.02, endX: lx + this.width * 0.06, endY: lCanopyCenterY - lCanopyH * 0.05, width: 5 },
+      { x: lx, y: lCanopyCenterY, endX: lx + this.width * 0.07, endY: lCanopyCenterY - lCanopyH * 0.08, width: 6 },
     ];
 
     this.leftTree = {
@@ -181,21 +179,21 @@ export class BirdFeederRenderer {
       branches: leftBranches,
     };
 
-    // Right tree at ~82% — slightly smaller
-    const rx = this.width * 0.82;
-    const rTrunkW = Math.max(4, this.width * 0.006);
-    const rCanopyW = this.width * 0.15;
-    const rCanopyH = this.height * 0.26;
-    const rCanopyCenterY = this.fenceY - this.height * 0.15;
-    const rTrunkTop = rCanopyCenterY + rCanopyH * 0.15;
+    // Right tree at ~85% — slightly smaller
+    const rx = this.width * 0.85;
+    const rTrunkW = Math.max(4, this.width * 0.007);
+    const rCanopyW = this.width * 0.17;
+    const rCanopyH = this.height * 0.28;
+    const rCanopyCenterY = this.fenceTopY + this.height * 0.07;
+    const rTrunkTop = rCanopyCenterY + rCanopyH * 0.2;
 
     const rightBranches = [
-      // Branch left side (perch points)
-      { x: rx, y: rCanopyCenterY + rCanopyH * 0.12, endX: rx - this.width * 0.07, endY: rCanopyCenterY + rCanopyH * 0.06, width: 6 },
-      // Branch right side
-      { x: rx, y: rCanopyCenterY + rCanopyH * 0.05, endX: rx + this.width * 0.05, endY: rCanopyCenterY - rCanopyH * 0.02, width: 5 },
+      // Branch left — extends toward feeders
+      { x: rx, y: rCanopyCenterY + rCanopyH * 0.1, endX: rx - this.width * 0.09, endY: rCanopyCenterY + rCanopyH * 0.04, width: 7 },
+      // Branch right
+      { x: rx, y: rCanopyCenterY + rCanopyH * 0.02, endX: rx + this.width * 0.06, endY: rCanopyCenterY - rCanopyH * 0.04, width: 5 },
       // Lower branch for perching
-      { x: rx, y: this.fenceY - this.height * 0.04, endX: rx - this.width * 0.06, endY: this.fenceY - this.height * 0.07, width: 6 },
+      { x: rx, y: this.fenceBottomY + this.height * 0.04, endX: rx - this.width * 0.08, endY: this.fenceBottomY, width: 7 },
     ];
 
     this.rightTree = {
@@ -214,21 +212,24 @@ export class BirdFeederRenderer {
   }
 
   private generateFeeders(): void {
+    // Feeders clustered in the mid-ground between fence bottom and ground
+    const feederZone = this.fenceBottomY + (this.groundY - this.fenceBottomY) * 0.35;
+
     // Platform feeder — center-left ~35%
     this.platformX = this.width * 0.35;
-    this.platformY = this.fenceY + (this.groundY - this.fenceY) * 0.25;
+    this.platformY = feederZone;
 
     // Bird bath — center ~50%
     this.bathX = this.width * 0.50;
-    this.bathY = this.groundY - 5;
+    this.bathY = this.groundY - 3;
 
     // Tube feeder — center-right ~65%
     this.tubeFeederX = this.width * 0.65;
-    this.tubeFeederY = this.fenceY + (this.groundY - this.fenceY) * 0.15;
+    this.tubeFeederY = feederZone - this.height * 0.02;
 
-    // Suet cage — right tree trunk
-    this.suetX = this.rightTree.x + this.rightTree.trunkWidth * 0.8;
-    this.suetY = this.fenceY - this.height * 0.01;
+    // Suet cage — right tree trunk, just below fence bottom
+    this.suetX = this.rightTree.x + this.rightTree.trunkWidth * 1.2;
+    this.suetY = this.fenceBottomY + this.height * 0.06;
 
     // Jelly station — hanging from left tree branch
     const jellyBranch = this.leftTree.branches[0]!;
@@ -237,27 +238,28 @@ export class BirdFeederRenderer {
   }
 
   private generateFence(): void {
+    // Privacy fence — posts with solid panels between them
     this.fencePosts = [];
-    const postSpacing = 70 + Math.random() * 15;
-    const postCount = Math.ceil(this.width / postSpacing) + 1;
+    const postSpacing = 60 + Math.random() * 15;
+    const postCount = Math.ceil(this.width / postSpacing) + 2;
     for (let i = 0; i < postCount; i++) {
-      const x = i * postSpacing;
-      this.fencePosts.push({ x, y: this.fenceY });
+      const x = -postSpacing + i * postSpacing;
+      this.fencePosts.push({ x, y: this.fenceBottomY });
     }
   }
 
   private generateWildflowers(): void {
     this.wildflowers = [];
     const colors = ['#e8d040', '#d070d0', '#f0f0f0', '#e0a030', '#80a0e0'];
-    const count = randomInt(20, 35);
+    const count = randomInt(25, 40);
     for (let i = 0; i < count; i++) {
       const x = randomRange(0, this.width);
-      const y = randomRange(this.groundY + 5, this.foreGrassY);
+      const y = randomRange(this.groundY + 3, this.foreGrassY - 5);
       this.wildflowers.push({
         x,
         y,
         color: colors[Math.floor(Math.random() * colors.length)]!,
-        size: randomRange(2, 4),
+        size: randomRange(2, 5),
         phase: randomRange(0, Math.PI * 2),
       });
     }
@@ -399,17 +401,17 @@ export class BirdFeederRenderer {
       });
     }
 
-    // Trunk perches — left tree
+    // Trunk perches — left tree (between fence bottom and ground)
     this.perchPoints.push({
-      x: this.leftTree.x - this.leftTree.trunkWidth * 0.5,
-      y: this.fenceY - this.height * 0.04,
+      x: this.leftTree.x - this.leftTree.trunkWidth * 1.5,
+      y: this.fenceBottomY + this.height * 0.04,
       type: 'trunk',
       facing: 'left',
       occupied: false,
     });
     this.perchPoints.push({
-      x: this.leftTree.x + this.leftTree.trunkWidth * 0.5,
-      y: this.fenceY - this.height * 0.08,
+      x: this.leftTree.x + this.leftTree.trunkWidth * 1.5,
+      y: this.fenceBottomY + this.height * 0.08,
       type: 'trunk',
       facing: 'right',
       occupied: false,
@@ -417,26 +419,27 @@ export class BirdFeederRenderer {
 
     // Trunk perches — right tree
     this.perchPoints.push({
-      x: this.rightTree.x - this.rightTree.trunkWidth * 0.5,
-      y: this.fenceY - this.height * 0.04,
+      x: this.rightTree.x - this.rightTree.trunkWidth * 1.5,
+      y: this.fenceBottomY + this.height * 0.04,
       type: 'trunk',
       facing: 'left',
       occupied: false,
     });
     this.perchPoints.push({
-      x: this.rightTree.x + this.rightTree.trunkWidth * 0.5,
-      y: this.fenceY - this.height * 0.08,
+      x: this.rightTree.x + this.rightTree.trunkWidth * 1.5,
+      y: this.fenceBottomY + this.height * 0.08,
       type: 'trunk',
       facing: 'right',
       occupied: false,
     });
 
-    // Fence perches — every other post
+    // Fence perches — on top of the privacy fence, every other post
     for (let i = 1; i < this.fencePosts.length; i += 2) {
       const post = this.fencePosts[i]!;
+      if (post.x < 0 || post.x > this.width) continue;
       this.perchPoints.push({
         x: post.x,
-        y: post.y - 28,
+        y: this.fenceTopY - 5,
         type: 'fence',
         occupied: false,
       });
@@ -465,7 +468,7 @@ export class BirdFeederRenderer {
       cloud.x += cloud.speed * dt;
       if (cloud.x > this.width + cloud.width) {
         cloud.x = -cloud.width;
-        cloud.y = randomRange(this.height * 0.03, this.horizonY * 0.8);
+        cloud.y = randomRange(this.height * 0.01, this.horizonY);
       }
     }
   }
@@ -473,12 +476,12 @@ export class BirdFeederRenderer {
   // --- Render methods (called in layer order by scene) ---
 
   renderSky(ctx: CanvasRenderingContext2D): void {
-    const grad = ctx.createLinearGradient(0, 0, 0, this.lawnTopY);
+    const grad = ctx.createLinearGradient(0, 0, 0, this.fenceTopY);
     grad.addColorStop(0, '#8ac4e8');
-    grad.addColorStop(0.5, '#b0d8f0');
-    grad.addColorStop(1, '#e8e4d8');
+    grad.addColorStop(0.5, '#a8d4ee');
+    grad.addColorStop(1, '#c8dce8');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, this.width, this.lawnTopY);
+    ctx.fillRect(0, 0, this.width, this.fenceTopY);
   }
 
   renderClouds(ctx: CanvasRenderingContext2D): void {
@@ -506,35 +509,42 @@ export class BirdFeederRenderer {
   }
 
   renderTreeline(ctx: CanvasRenderingContext2D): void {
-    // Distant tree silhouettes along horizon
+    // Neighbor trees peeking above the privacy fence
     ctx.save();
-    ctx.globalAlpha = 0.5;
-    ctx.fillStyle = '#4a6a58';
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = '#4a6a50';
     ctx.beginPath();
-    ctx.moveTo(0, this.treelineY + 10);
-    const segments = 40;
+    ctx.moveTo(0, this.fenceTopY);
+    const segments = 50;
     for (let i = 0; i <= segments; i++) {
       const t = i / segments;
       const x = t * this.width;
-      const y = this.treelineY
-        + Math.sin(t * Math.PI * 8) * 4
-        + Math.sin(t * Math.PI * 3 + 1) * 6
-        + Math.sin(t * Math.PI * 13 + 2) * 2;
+      const y = this.fenceTopY
+        - Math.max(0, Math.sin(t * Math.PI * 6 + 0.5) * 8)
+        - Math.max(0, Math.sin(t * Math.PI * 10 + 2) * 4)
+        - Math.max(0, Math.sin(t * Math.PI * 3 + 1) * 6);
       ctx.lineTo(x, y);
     }
-    ctx.lineTo(this.width, this.treelineY + 10);
+    ctx.lineTo(this.width, this.fenceTopY);
     ctx.closePath();
     ctx.fill();
     ctx.restore();
   }
 
   renderBackLawn(ctx: CanvasRenderingContext2D): void {
-    const grad = ctx.createLinearGradient(0, this.treelineY, 0, this.groundY);
-    grad.addColorStop(0, '#78b060');
-    grad.addColorStop(0.4, '#68a850');
+    // Lawn visible below the privacy fence
+    const grad = ctx.createLinearGradient(0, this.fenceBottomY, 0, this.groundY);
+    grad.addColorStop(0, '#68a850');
     grad.addColorStop(1, '#58a040');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, this.treelineY, this.width, this.groundY - this.treelineY);
+    ctx.fillRect(0, this.fenceBottomY, this.width, this.groundY - this.fenceBottomY);
+
+    // Darker shade near the fence base
+    ctx.save();
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, this.fenceBottomY, this.width, this.height * 0.03);
+    ctx.restore();
   }
 
   renderTreeTrunks(ctx: CanvasRenderingContext2D): void {
@@ -805,35 +815,46 @@ export class BirdFeederRenderer {
   }
 
   renderFence(ctx: CanvasRenderingContext2D): void {
+    const fH = this.fenceBottomY - this.fenceTopY;
+
     ctx.save();
     for (let i = 0; i < this.fencePosts.length; i++) {
       const post = this.fencePosts[i]!;
 
-      // Post
-      ctx.fillStyle = '#8a7a60';
-      ctx.fillRect(post.x - 3, post.y - 26, 6, 26);
-
-      // Post cap
-      ctx.fillStyle = '#7a6a50';
-      ctx.fillRect(post.x - 4, post.y - 28, 8, 4);
-
-      // Rails
+      // Solid panel between posts
       if (i < this.fencePosts.length - 1) {
         const next = this.fencePosts[i + 1]!;
-        ctx.strokeStyle = '#8a7a60';
-        ctx.lineWidth = 3;
-        // Top rail
-        ctx.beginPath();
-        ctx.moveTo(post.x, post.y - 20);
-        ctx.lineTo(next.x, next.y - 20);
-        ctx.stroke();
-        // Bottom rail
-        ctx.beginPath();
-        ctx.moveTo(post.x, post.y - 10);
-        ctx.lineTo(next.x, next.y - 10);
-        ctx.stroke();
+        const panelW = next.x - post.x;
+
+        // Panel background
+        ctx.fillStyle = '#9a8a6a';
+        ctx.fillRect(post.x, this.fenceTopY, panelW, fH);
+
+        // Vertical board lines
+        ctx.strokeStyle = '#8a7a5a';
+        ctx.lineWidth = 0.5;
+        const boardW = 12;
+        for (let bx = post.x + boardW; bx < next.x; bx += boardW) {
+          ctx.beginPath();
+          ctx.moveTo(bx, this.fenceTopY);
+          ctx.lineTo(bx, this.fenceBottomY);
+          ctx.stroke();
+        }
       }
+
+      // Post (thicker than panel boards)
+      ctx.fillStyle = '#8a7a58';
+      ctx.fillRect(post.x - 3, this.fenceTopY - 3, 6, fH + 6);
+
+      // Post cap
+      ctx.fillStyle = '#7a6a48';
+      ctx.fillRect(post.x - 4, this.fenceTopY - 5, 8, 4);
     }
+
+    // Top rail
+    ctx.fillStyle = '#8a7a58';
+    ctx.fillRect(0, this.fenceTopY - 1, this.width, 3);
+
     ctx.restore();
   }
 
