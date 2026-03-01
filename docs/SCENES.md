@@ -36,18 +36,40 @@ A wide open sky with a flock of birds performing murmuration — hundreds of sma
 
 ## Bird Feeder / Backyard
 
-A cozy backyard scene viewed from a window. A bird feeder hangs from a tree branch. Birds arrive, land, eat, hop around, and fly off. Different species come and go.
+**Full spec:** [BIRD_FEEDER.md](./BIRD_FEEDER.md)
 
-**Mood:** Homey, gentle, familiar. Like watching birds from your kitchen.
+A cozy backyard scene viewed from a window. Multiple feeding stations — tube seed feeder, platform feeder, suet cage, jelly & fruit station, and bird bath — attract 14 species of backyard birds. Birds arrive from off-screen, visit their preferred feeders, eat, splash, hop between perches, and fly off.
+
+**Mood:** Homey, gentle, familiar. Like watching birds from your kitchen window on a quiet morning.
 
 **Key behaviors:**
+- 14 bird species, each with preferred feeder types (bird-to-feeder matrix drives variety)
+- Birds approach from off-screen, circle, and land on feeders, branches, or ground
+- Species-specific behaviors — chickadee grab-and-go, Blue Jay intimidation scatter, woodpecker clinging, nuthatch head-down climbing, goldfinch undulating flight
+- Cardinal male/female pairs arrive and stay together
+- Robin enthusiastic bathing with splash particles
+- Pecking order — larger birds displace smaller ones at feeders
+
 - Birds approach from off-screen, circle, and land on the feeder or nearby branches
 - Feeding behavior — pecking, looking around, pecking again
 - Hopping along branches and on the ground
 - Startling and flying away, then cautiously returning
 - Territorial behavior — one bird chasing another off
 
+**Feeding stations:**
+- Tube seed feeder (chickadees, goldfinches, titmice, nuthatches)
+- Platform feeder (cardinals, blue jays, juncos, doves)
+- Suet cage on tree trunk (woodpeckers, nuthatches, wrens)
+- Jelly & fruit station (orioles, woodpeckers)
+- Bird bath with splash effects (robins, all species)
+
 **Environment elements:**
+- Two large trees — one left (jelly station), one right (suet cage) — with branch perch points
+- Wooden post-and-rail fence across the mid-ground
+- Shepherd's hook and post-mounted feeders in the center area
+- Ground-level foraging area with scattered seed beneath feeders
+- Foreground grass swaying in the breeze
+
 - Backyard with fence, grass, maybe a garden
 - Tree with branches at different depths
 - Bird feeder (tube, platform, or suet style)
