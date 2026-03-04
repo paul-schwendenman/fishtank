@@ -6,6 +6,7 @@ import { FireflyFieldScene } from './scenes/FireflyFieldScene';
 import { TidePoolScene } from './scenes/TidePoolScene';
 import { FarmFieldScene } from './scenes/FarmFieldScene';
 import { BirdFeederScene } from './scenes/BirdFeederScene';
+import { MurmurationScene } from './scenes/MurmurationScene';
 import { SettingsUI, type SceneEntry } from './ui/SettingsUI';
 import { initFullscreenButton } from './ui/fullscreen';
 
@@ -61,6 +62,13 @@ const scenes: SceneEntry[] = [
     description: 'Backyard bird watching',
     icon: '\u{1F426}',
     create: (w, h) => new BirdFeederScene(w, h),
+  },
+  {
+    id: 'murmuration',
+    name: 'Murmuration',
+    description: 'Starling flock at sunset',
+    icon: '\u{1F426}\u{200D}\u{2B1B}',
+    create: (w, h) => new MurmurationScene(w, h),
   },
 ];
 
