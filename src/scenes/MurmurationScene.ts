@@ -17,20 +17,20 @@ import { MurmurationRenderer } from '../rendering/MurmurationRenderer';
 const BOID_COUNT = 400;
 const PERCEPTION_RADIUS = 20;
 const SEPARATION_RADIUS = 6;
-const BOUNDARY_RADIUS = 120;
-const PREFERRED_ALTITUDE = 50;
+const BOUNDARY_RADIUS = 60;
+const PREFERRED_ALTITUDE = 45;
 
-// Migration waypoints — a large loop through the sky near the camera.
-// Y is altitude, X/Z are horizontal. Camera is at origin.
+// Migration waypoints — a loop in front of the camera (which looks toward -Z, angled up).
+// All Z values negative (in front of camera), X within ±35, Y 25-65.
 const WAYPOINTS: THREE.Vector3[] = [
-  new THREE.Vector3(-30, 55, -60),   // left, high, behind
-  new THREE.Vector3(-60, 45, -20),   // far left, sweep past
-  new THREE.Vector3(-40, 60, 30),    // left, high, in front
-  new THREE.Vector3(0, 40, 50),      // center, close pass overhead
-  new THREE.Vector3(40, 55, 30),     // right, high
-  new THREE.Vector3(60, 50, -20),    // far right
-  new THREE.Vector3(30, 65, -60),    // right, high, behind
-  new THREE.Vector3(0, 70, -80),     // center, distant, high
+  new THREE.Vector3(-20, 45, -50),   // left, mid-distance
+  new THREE.Vector3(-30, 35, -30),   // sweep left and close
+  new THREE.Vector3(-10, 25, -20),   // close pass, low
+  new THREE.Vector3( 15, 40, -25),   // swing right, rising
+  new THREE.Vector3( 30, 55, -45),   // far right, high
+  new THREE.Vector3( 15, 65, -70),   // high, drifting back center
+  new THREE.Vector3(-10, 55, -65),   // left, distant, high
+  new THREE.Vector3(-25, 50, -55),   // loop back to start
 ];
 
 export class MurmurationScene implements Scene {

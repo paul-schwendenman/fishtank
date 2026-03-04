@@ -135,6 +135,7 @@ export class MurmurationRenderer {
     const skyMat = new THREE.MeshBasicMaterial({
       vertexColors: true,
       side: THREE.BackSide,
+      fog: false,
     });
     const sky = new THREE.Mesh(skyGeo, skyMat);
     this.scene.add(sky);
