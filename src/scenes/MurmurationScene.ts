@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Scene } from '../engine/GameLoop';
 import { Boid } from '../entities/Boid';
+import { Hawk } from '../entities/Hawk';
 import {
   separation,
   alignment,
@@ -9,6 +10,7 @@ import {
   migration,
   verticalPreference,
   wander3D,
+  fleeHawk,
   composeForceBudget3D,
 } from '../behaviors/MurmurationSteering';
 import { SpatialHash3D } from '../spatial/SpatialHash3D';
@@ -19,6 +21,7 @@ const PERCEPTION_RADIUS = 20;
 const SEPARATION_RADIUS = 6;
 const BOUNDARY_RADIUS = 60;
 const PREFERRED_ALTITUDE = 45;
+const HAWK_THREAT_RADIUS = 25;
 
 // Migration waypoints — a loop in front of the camera (which looks toward -Z, angled up).
 // All Z values negative (in front of camera), X within ±35, Y 25-65.
@@ -37,7 +40,9 @@ export class MurmurationScene implements Scene {
   private width: number;
   private height: number;
   private boids: Boid[] = [];
+  private hawk: Hawk;
   private renderer3D: MurmurationRenderer;
+  private flockCenter = new THREE.Vector3();
   private spatialHash = new SpatialHash3D<Boid>(20);
 
   // Migration state
@@ -54,6 +59,14 @@ export class MurmurationScene implements Scene {
 
     // Compute initial migration target
     this.updateMigrationTarget();
+
+    // Spawn hawk above first waypoint
+    const hawkStart = new THREE.Vector3(
+      WAYPOINTS[0]!.x + 30,
+      WAYPOINTS[0]!.y + 25,
+      WAYPOINTS[0]!.z,
+    );
+    this.hawk = new Hawk(hawkStart);
 
     // Spawn boids in a loose cloud near first waypoint
     const spawnCenter = WAYPOINTS[0]!;
@@ -89,6 +102,16 @@ export class MurmurationScene implements Scene {
     }
     this.updateMigrationTarget();
 
+    // Compute flock centroid for hawk
+    this.flockCenter.set(0, 0, 0);
+    for (const boid of this.boids) {
+      this.flockCenter.add(boid.position);
+    }
+    this.flockCenter.divideScalar(this.boids.length);
+
+    // Update hawk
+    this.hawk.update(dt, this.flockCenter);
+
     // Rebuild spatial hash
     this.spatialHash.clear();
     for (const boid of this.boids) {
@@ -111,10 +134,12 @@ export class MurmurationScene implements Scene {
       const migForce = migration(boid, this.migrationTarget, 0.4);
       const vertForce = verticalPreference(boid, PREFERRED_ALTITUDE, 0.15);
       const wandForce = wander3D(boid, 0.3);
+      const hawkForce = fleeHawk(boid, this.hawk.position, this.hawk.velocity, HAWK_THREAT_RADIUS);
 
       const resultForce = composeForceBudget3D(
         [
           { force: boundForce, priority: 0 },
+          { force: hawkForce, priority: 0 },
           { force: migForce, priority: 1 },
           { force: sepForce, priority: 2 },
           { force: aliForce, priority: 3 },
@@ -134,8 +159,9 @@ export class MurmurationScene implements Scene {
     // Clear the 2D canvas — all rendering happens on the overlay
     ctx.clearRect(0, 0, this.width, this.height);
 
-    // Update instanced mesh and render via Three.js
+    // Update instanced mesh and hawk, then render via Three.js
     this.renderer3D.updateBoids(this.boids, this.lastDt);
+    this.renderer3D.updateHawk(this.hawk);
     this.renderer3D.render();
   }
 

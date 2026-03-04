@@ -160,6 +160,38 @@ export function verticalPreference(boid: Boid, preferredY: number, weight: numbe
 }
 
 /**
+ * Flee from hawk: inverse-distance repulsion, biased by hawk velocity for sideways dodge.
+ * Priority 0 — overrides all other forces.
+ */
+export function fleeHawk(boid: Boid, hawkPos: THREE.Vector3, hawkVel: THREE.Vector3, threatRadius: number): THREE.Vector3 {
+  _tempVec.copy(boid.position).sub(hawkPos);
+  const dist = _tempVec.length();
+
+  if (dist > threatRadius || dist < 0.001) return new THREE.Vector3();
+
+  // Base flee direction: away from hawk
+  const flee = _tempVec.normalize();
+
+  // Bias by hawk velocity — boids dodge sideways, not just backward
+  const hawkSpeed = hawkVel.length();
+  if (hawkSpeed > 1) {
+    _desired.copy(hawkVel).normalize();
+    // Cross product gives perpendicular dodge direction
+    const cross = new THREE.Vector3().crossVectors(flee, _desired);
+    if (cross.length() > 0.01) {
+      cross.normalize().multiplyScalar(0.4);
+      flee.add(cross).normalize();
+    }
+  }
+
+  // Inverse distance: closer = stronger
+  const proximity = 1 - dist / threatRadius;
+  const strength = proximity * proximity * boid.maxForce * 4;
+
+  return flee.multiplyScalar(strength).clone();
+}
+
+/**
  * 3D wander: autocorrelated direction changes for smooth individual variation.
  */
 export function wander3D(boid: Boid, weight: number): THREE.Vector3 {

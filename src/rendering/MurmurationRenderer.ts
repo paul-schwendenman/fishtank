@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Boid } from '../entities/Boid';
+import type { Hawk } from '../entities/Hawk';
 
 const HORIZON_COLOR = new THREE.Color(0xd4763a); // warm orange
 const ZENITH_COLOR = new THREE.Color(0x1a2a4a);  // deep blue
@@ -11,6 +12,7 @@ export class MurmurationRenderer {
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
   private instancedMesh: THREE.InstancedMesh;
+  private hawkMesh: THREE.Mesh;
   private overlayCanvas: HTMLCanvasElement;
   private dummy = new THREE.Object3D();
   private maxCount: number;
@@ -79,6 +81,16 @@ export class MurmurationRenderer {
     this.instancedMesh = new THREE.InstancedMesh(boidGeo, boidMat, maxBoids);
     this.instancedMesh.frustumCulled = false;
     this.scene.add(this.instancedMesh);
+
+    // Hawk mesh — single larger bird
+    const hawkGeo = this.createHawkGeometry();
+    const hawkMat = new THREE.MeshLambertMaterial({
+      color: new THREE.Color(0x2a2a2a),
+      side: THREE.DoubleSide,
+    });
+    this.hawkMesh = new THREE.Mesh(hawkGeo, hawkMat);
+    this.hawkMesh.frustumCulled = false;
+    this.scene.add(this.hawkMesh);
   }
 
   private createBoidGeometry(): THREE.BufferGeometry {
@@ -110,6 +122,49 @@ export class MurmurationRenderer {
     geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
     geo.computeVertexNormals();
     return geo;
+  }
+
+  private createHawkGeometry(): THREE.BufferGeometry {
+    // Raptor silhouette — swept wings + tail, ~3x boid scale
+    const geo = new THREE.BufferGeometry();
+    const s = 4.5;
+    const vertices = new Float32Array([
+      // Left wing (2 triangles)
+       0.0,       0.0,      -0.5 * s,  // nose
+      -0.8 * s,   0.0,       0.3 * s,  // left wingtip
+       0.0,       0.06 * s,  0.1 * s,  // body top
+
+       0.0,       0.0,      -0.5 * s,
+       0.0,      -0.06 * s,  0.1 * s,  // body bottom
+      -0.8 * s,   0.0,       0.3 * s,
+
+      // Right wing (2 triangles)
+       0.0,       0.0,      -0.5 * s,
+       0.0,       0.06 * s,  0.1 * s,
+       0.8 * s,   0.0,       0.3 * s,  // right wingtip
+
+       0.0,       0.0,      -0.5 * s,
+       0.8 * s,   0.0,       0.3 * s,
+       0.0,      -0.06 * s,  0.1 * s,
+
+      // Tail (2 triangles)
+       0.0,       0.06 * s,  0.1 * s,
+      -0.15 * s,  0.0,       0.5 * s,  // tail left
+       0.15 * s,  0.0,       0.5 * s,  // tail right
+
+       0.0,      -0.06 * s,  0.1 * s,
+       0.15 * s,  0.0,       0.5 * s,
+      -0.15 * s,  0.0,       0.5 * s,
+    ]);
+
+    geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    geo.computeVertexNormals();
+    return geo;
+  }
+
+  updateHawk(hawk: Hawk): void {
+    this.hawkMesh.position.copy(hawk.position);
+    this.hawkMesh.quaternion.copy(hawk.heading);
   }
 
   private setupSky(): void {
@@ -195,6 +250,8 @@ export class MurmurationRenderer {
     this.renderer.dispose();
     this.instancedMesh.geometry.dispose();
     (this.instancedMesh.material as THREE.Material).dispose();
+    this.hawkMesh.geometry.dispose();
+    (this.hawkMesh.material as THREE.Material).dispose();
     this.scene.traverse((obj) => {
       if (obj instanceof THREE.Mesh) {
         obj.geometry.dispose();
