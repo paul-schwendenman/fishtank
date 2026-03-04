@@ -184,9 +184,9 @@ export function fleeHawk(boid: Boid, hawkPos: THREE.Vector3, hawkVel: THREE.Vect
     }
   }
 
-  // Inverse distance: closer = stronger
+  // Inverse distance: closer = stronger, linear falloff for visible reaction at range
   const proximity = 1 - dist / threatRadius;
-  const strength = proximity * proximity * boid.maxForce * 4;
+  const strength = proximity * boid.maxForce * 8;
 
   return flee.multiplyScalar(strength).clone();
 }

@@ -23,6 +23,10 @@ export class Hawk {
 
   // Dive target
   private diveTarget = new THREE.Vector3();
+  private passedTarget = false;
+
+  // Climb direction (fixed at entry, not recomputed)
+  private climbDir = new THREE.Vector3();
 
   constructor(position: THREE.Vector3) {
     this.position = position.clone();
@@ -48,12 +52,17 @@ export class Hawk {
     this.stateTimer = 0;
     this.stateDuration = 2 + Math.random(); // 2-3 seconds
     this.diveTarget.copy(flockCenter);
+    this.passedTarget = false;
   }
 
-  private enterClimbing(): void {
+  private enterClimbing(flockCenter: THREE.Vector3): void {
     this.state = 'climbing';
     this.stateTimer = 0;
     this.stateDuration = 3 + Math.random() * 2; // 3-5 seconds
+    // Fix climb direction once at entry — away from flock + upward
+    this.climbDir.copy(this.position).sub(flockCenter).setY(0);
+    if (this.climbDir.length() < 0.1) this.climbDir.set(1, 0, 0);
+    this.climbDir.normalize();
   }
 
   update(dt: number, flockCenter: THREE.Vector3): void {
@@ -70,24 +79,25 @@ export class Hawk {
       case 'diving':
         this.updateDiving(dt);
         if (this.stateTimer >= this.stateDuration) {
-          this.enterClimbing();
+          this.enterClimbing(flockCenter);
         }
         break;
 
       case 'climbing':
-        this.updateClimbing(dt, flockCenter);
+        this.updateClimbing(dt);
         if (this.stateTimer >= this.stateDuration) {
           this.enterCircling(flockCenter);
         }
         break;
     }
 
-    // Update heading quaternion from velocity
+    // Update heading quaternion from velocity — slerp for smooth rotation
     const speed = this.velocity.length();
     if (speed > 0.1) {
       _tempVec.copy(this.position).add(this.velocity);
       _lookMatrix.lookAt(this.position, _tempVec, _up);
-      this.heading.setFromRotationMatrix(_lookMatrix);
+      const targetQ = new THREE.Quaternion().setFromRotationMatrix(_lookMatrix);
+      this.heading.slerp(targetQ, Math.min(3 * dt, 1));
     }
   }
 
@@ -103,11 +113,11 @@ export class Hawk {
     const altitudeBob = Math.sin(this.stateTimer * 0.5) * 3;
     const targetY = this.circleAltitude + altitudeBob;
 
-    // Steer toward circle position
+    // Steer toward circle position — gentle lerp for large bird inertia
     _tempVec.set(targetX, targetY, targetZ).sub(this.position);
     const desired = _tempVec.normalize().multiplyScalar(15);
 
-    this.velocity.lerp(desired, 3 * dt);
+    this.velocity.lerp(desired, 1.5 * dt);
 
     // Move
     _tempVec.copy(this.velocity).multiplyScalar(dt);
@@ -115,17 +125,26 @@ export class Hawk {
   }
 
   private updateDiving(dt: number): void {
-    // Accelerate toward dive target
     const t = this.stateTimer / this.stateDuration; // 0 to 1
 
+    // Check if we've passed through the target — dot product of
+    // (target - position) with velocity flips negative
     _tempVec.copy(this.diveTarget).sub(this.position);
     const dist = _tempVec.length();
+    if (!this.passedTarget && dist < 5) {
+      this.passedTarget = true;
+    }
 
     // Speed ramps up during dive
     const speed = 30 + t * 30; // 30 to 60
-    if (dist > 1) {
+
+    if (!this.passedTarget && dist > 1) {
+      // Steer toward target
       const desired = _tempVec.normalize().multiplyScalar(speed);
-      this.velocity.lerp(desired, 5 * dt);
+      this.velocity.lerp(desired, 2 * dt);
+    } else {
+      // Already passed through — maintain direction, just adjust speed
+      this.velocity.setLength(speed);
     }
 
     // Move
@@ -133,23 +152,18 @@ export class Hawk {
     this.position.add(_tempVec);
   }
 
-  private updateClimbing(dt: number, flockCenter: THREE.Vector3): void {
+  private updateClimbing(dt: number): void {
     const t = this.stateTimer / this.stateDuration;
 
-    // Pull up and away from flock, decelerating
-    _tempVec.copy(this.position).sub(flockCenter).setY(0);
-    if (_tempVec.length() < 0.1) _tempVec.set(1, 0, 0);
-    _tempVec.normalize();
-
-    // Climb direction: away from flock center + upward
+    // Use fixed climb direction computed at entry
     const speed = 40 * (1 - t * 0.6); // decelerate from 40 to ~16
     const desired = new THREE.Vector3(
-      _tempVec.x * speed * 0.7,
+      this.climbDir.x * speed * 0.7,
       speed * 0.5,
-      _tempVec.z * speed * 0.7,
+      this.climbDir.z * speed * 0.7,
     );
 
-    this.velocity.lerp(desired, 2 * dt);
+    this.velocity.lerp(desired, 1.2 * dt);
 
     // Move
     _tempVec.copy(this.velocity).multiplyScalar(dt);

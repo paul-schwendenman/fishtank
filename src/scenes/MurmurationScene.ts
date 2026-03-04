@@ -21,7 +21,7 @@ const PERCEPTION_RADIUS = 20;
 const SEPARATION_RADIUS = 6;
 const BOUNDARY_RADIUS = 60;
 const PREFERRED_ALTITUDE = 45;
-const HAWK_THREAT_RADIUS = 25;
+const HAWK_THREAT_RADIUS = 40;
 
 // Migration waypoints — a loop in front of the camera (which looks toward -Z, angled up).
 // All Z values negative (in front of camera), X within ±35, Y 25-65.
@@ -134,12 +134,9 @@ export class MurmurationScene implements Scene {
       const migForce = migration(boid, this.migrationTarget, 0.4);
       const vertForce = verticalPreference(boid, PREFERRED_ALTITUDE, 0.15);
       const wandForce = wander3D(boid, 0.3);
-      const hawkForce = fleeHawk(boid, this.hawk.position, this.hawk.velocity, HAWK_THREAT_RADIUS);
-
       const resultForce = composeForceBudget3D(
         [
           { force: boundForce, priority: 0 },
-          { force: hawkForce, priority: 0 },
           { force: migForce, priority: 1 },
           { force: sepForce, priority: 2 },
           { force: aliForce, priority: 3 },
@@ -151,6 +148,11 @@ export class MurmurationScene implements Scene {
       );
 
       boid.applyForce(resultForce);
+
+      // Hawk flee applied outside force budget so it can overpower flock steering
+      const hawkForce = fleeHawk(boid, this.hawk.position, this.hawk.velocity, HAWK_THREAT_RADIUS);
+      boid.applyForce(hawkForce);
+
       boid.update(dt);
     }
   }
